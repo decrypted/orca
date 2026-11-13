@@ -1,10 +1,11 @@
-import { readFile, readdir, readlink } from 'node:fs/promises'
+import { readFile, readlink } from 'node:fs/promises'
 import { LSOF_NONBLOCKING_ARGS } from '../../shared/process-observation/lsof-nonblocking-args'
 import { getProcessOutputFields } from '../../shared/process-observation/process-output-field-scanner'
 import { readWindowsProcessTable } from '../windows/windows-process-table'
 import { runPortScanCommand } from './port-scan-command-client'
 import { parseDarwinNetstatListeners } from './darwin-netstat-listeners'
 import { loadDarwinProcessMetadata } from './darwin-process-metadata'
+import { resolveLinuxListenerSocketOwners } from './linux-listener-socket-owners'
 import {
   partitionListenersNeedingMetadata,
   recallListenerMetadata,
@@ -166,7 +167,14 @@ async function scanLinuxProcPorts(): Promise<PlatformListeningPortScan> {
     readProcNet('/proc/net/tcp6', ownUid)
   ])
   const sockets = [...tcp4, ...tcp6]
-  const inodeToPid = await mapLinuxInodesToPids(new Set(sockets.map((socket) => socket.inode)))
+  // Other users' fds (system services included) are unreadable, so their sockets can never resolve and would keep every walk from stopping early.
+  const inodeToPid = await resolveLinuxListenerSocketOwners(
+    new Set(
+      sockets
+        .filter((socket) => ownUid === undefined || ownUid === 0 || socket.uid === ownUid)
+        .map((socket) => socket.inode)
+    )
+  )
   const metadata = new Map<number, ProcessMetadata>()
   const rawPorts: RawListeningPort[] = []
 
@@ -195,46 +203,6 @@ async function readProcNet(
   } catch {
     return []
   }
-}
-
-async function mapLinuxInodesToPids(inodes: Set<number>): Promise<Map<number, number>> {
-  const result = new Map<number, number>()
-  if (inodes.size === 0) {
-    return result
-  }
-  let pids: string[]
-  try {
-    pids = (await readdir('/proc')).filter((entry) => /^\d+$/.test(entry))
-  } catch {
-    return result
-  }
-
-  for (const pidText of pids) {
-    let fds: string[]
-    try {
-      fds = await readdir(`/proc/${pidText}/fd`)
-    } catch {
-      continue
-    }
-    const pid = Number.parseInt(pidText, 10)
-    for (const fd of fds) {
-      let link: string
-      try {
-        link = await readlink(`/proc/${pidText}/fd/${fd}`)
-      } catch {
-        continue
-      }
-      const match = link.match(/^socket:\[(\d+)\]$/)
-      if (!match) {
-        continue
-      }
-      const inode = Number.parseInt(match[1], 10)
-      if (inodes.has(inode)) {
-        result.set(inode, pid)
-      }
-    }
-  }
-  return result
 }
 
 async function loadLinuxProcessMetadata(pid: number): Promise<ProcessMetadata> {
