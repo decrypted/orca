@@ -54,7 +54,7 @@ export class SshConnectionManager {
   ): Promise<SshConnection> {
     // Refuse user-disconnected hosts before pool reuse, including transports opened by connection tests (#30086).
     if (!options?.probe && isSshUserDisconnected(target.id)) {
-      throw createSshUserDisconnectedError(target.label)
+      throw createSshUserDisconnectedError(target.label, target.id)
     }
     // A sleeping VM's host takes no login until its workspace wakes; that wake marks it waking first.
     if (!options?.probe && isSshHostHeldAsleep(target.id)) {

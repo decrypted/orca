@@ -11,7 +11,7 @@ export const getRemoteHostAutoConnectSearchEntry = createLocalizedCatalog(
     ),
     description: translate(
       'settings.backgroundActivity.remoteHostAutoConnect.description',
-      'Reconnect SSH hosts and the Orca servers on them at launch, and keep trying to reach them in the background. When off, Orca connects to a host only once you connect it yourself.'
+      'Let Orca connect to SSH hosts, and the Orca servers on them, on its own: at launch and in the background. When off, it connects a host only when you do. Servers paired directly, without an SSH host, are not affected.'
     ),
     keywords: [
       ...translateSearchKeyword(

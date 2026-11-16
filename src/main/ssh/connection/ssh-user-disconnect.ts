@@ -1,4 +1,7 @@
-import { formatSshUserDisconnectedMessage } from '../../../shared/remote-runtime/ssh/ssh-user-disconnect-message'
+import {
+  formatSshAutoConnectOffMessage,
+  formatSshUserDisconnectedMessage
+} from '../../../shared/remote-runtime/ssh/ssh-user-disconnect-message'
 import {
   getRuntimeSshAccess,
   type KnownRuntimeEnvironment
@@ -65,8 +68,14 @@ export function resetSshUserDisconnectsForTests(): void {
 }
 
 /** Not an auth or transient failure: callers neither ask for a sign-in nor retry it. */
-export function createSshUserDisconnectedError(label: string): Error {
-  return Object.assign(new Error(formatSshUserDisconnectedMessage(label)), {
-    code: 'ssh_user_disconnected'
-  })
+export function createSshUserDisconnectedError(label: string, targetId?: string): Error {
+  const message =
+    targetId !== undefined && autoConnectOffTargets.has(targetId)
+      ? formatSshAutoConnectOffMessage(label)
+      : formatSshUserDisconnectedMessage(label)
+  return Object.assign(new Error(message), { code: 'ssh_user_disconnected' })
+}
+
+export function isSshUserDisconnectedError(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ssh_user_disconnected'
 }
