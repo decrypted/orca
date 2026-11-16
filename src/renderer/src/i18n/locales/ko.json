@@ -4857,7 +4857,8 @@
             "ariaLabel": "{{title}}, {{status}}",
             "onDescription": "이 컴퓨터가 절전 모드로 전환되지 않도록 항상 유지",
             "autoDescription": "에이전트가 작업하는 동안 절전 모드로 전환되지 않도록 유지",
-            "offDescription": "시스템의 기본 절전 동작 허용"
+            "offDescription": "시스템의 기본 절전 동작 허용",
+            "timerHeading": "절전 방지 시간"
           },
           "StatusBar": {
             "9659e38343": "포트",
@@ -11686,12 +11687,14 @@
           "modeDescriptionDefault": "켜짐, 에이전트 또는 꺼짐을 선택합니다. 에이전트 모드는 에이전트가 작업하는 동안 활성 상태를 유지합니다. Orca는 또한 전원 정책에 따라 덮개가 닫혀 있을 때 이 기기가 활성 상태를 유지하도록 요청합니다.",
           "lidNoteMac": "덮개를 연 상태에서는 유휴 절전을 방지합니다. 덮개를 닫으면 이 Mac이 절전 모드로 전환됩니다.",
           "lidNoteWindows": "뚜껑 닫기 동작은 이 장치의 전원 설정을 따릅니다.",
-          "lidNoteDefault": "Orca는 또한 전원 정책에 따라 뚜껑을 닫을 때 이 장치를 깨어 있도록 요청합니다."
+          "lidNoteDefault": "Orca는 또한 전원 정책에 따라 뚜껑을 닫을 때 이 장치를 깨어 있도록 요청합니다.",
+          "timerUntil": "{{time}}까지"
         },
         "AgentAwakeSetting": {
           "on": "켜짐",
           "auto": "에이전트",
-          "off": "꺼짐"
+          "off": "꺼짐",
+          "timerActive": "{{until}}, 이후 {{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "이 런타임의 GitHub CLI는 계정 바인딩을 지원하기에는 너무 오래되었습니다(gh ≥ 2.40 필요).",
