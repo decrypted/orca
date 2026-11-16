@@ -10,6 +10,7 @@ import {
 } from '@/hooks/terminal-command-finished-event'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { brandEphemeralSetupTerminalWorktreeId } from '../../../../shared/workspace-setup/ephemeral-setup-terminal-worktree-id'
 
 const ONBOARDING_INLINE_TERMINAL_WORKTREE_ID = 'onboarding-inline-terminal'
@@ -68,13 +69,7 @@ export function OnboardingInlineCommandTerminal({
   const closeTab = useAppStore((s) => s.closeTab)
   const setActiveTabForWorktree = useAppStore((s) => s.setActiveTabForWorktree)
   const setTabCustomTitle = useAppStore((s) => s.setTabCustomTitle)
-  const prefersReducedMotion = useMemo(
-    () =>
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    []
-  )
+  const prefersReducedMotion = usePrefersReducedMotion()
   const [cwd, setCwd] = useState<string | null>(null)
   const [createdTab, setCreatedTab] = useState<{
     id: string

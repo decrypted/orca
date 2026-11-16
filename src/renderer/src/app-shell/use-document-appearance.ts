@@ -7,7 +7,7 @@ import { useSplitDividerSetting } from '@/hooks/use-split-divider-setting'
 import { rebuildAllTerminalWebglRenderers } from '@/lib/pane-manager/pane-manager-registry'
 import { applyThemeBackground } from './appearance/theme-background'
 import { syncThemeBackgroundVideo } from './appearance/theme-background-video'
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
+import { usePrefersReducedMotion, useReduceMotionSetting } from '../hooks/usePrefersReducedMotion'
 import { useWindowActive } from '../hooks/use-window-active'
 import { tolerantPluginThemeBackgroundRegistration } from '../../../shared/plugins/artifacts/plugin-theme-background'
 import {
@@ -57,6 +57,7 @@ export function useDocumentAppearance(): void {
   usePluginIconThemeActivation(useAppStore((s) => s.settings?.pluginIconTheme))
   usePluginFontRegistration()
   const reduceEffects = useReduceVisualEffects(useAppStore((s) => s.settings?.reduceVisualEffects))
+  useReduceMotionSetting(useAppStore((s) => s.settings?.reduceMotion))
   const surfaceOpacity = useAppStore((s) => s.settings?.terminalBackgroundOpacity ?? 1)
   useEffect(() => {
     document.documentElement.style.setProperty(
