@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { useAppStore } from '@/store/index'
+import { readPrefersReducedMotion } from '@/hooks/theme/usePrefersReducedMotion'
 import { automationsPageLocationKey } from '../../store/slices/ui/automations-page-location'
 import type { AutomationsPageLocation } from './automation-page-state'
 import type { AutomationsPageNavigation } from './automations-page-navigation'
@@ -108,7 +109,7 @@ function flashReturnedRow(element: HTMLElement): void {
   if (!primary) {
     return
   }
-  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  const reduceMotion = readPrefersReducedMotion()
   // Why: an inset shadow paints over any background, so the row and its sticky name cell
   // (which paints its own, transitioning background) get the same tint.
   const tint = `inset 0 0 0 100vmax color-mix(in srgb, ${primary} 14%, transparent)`

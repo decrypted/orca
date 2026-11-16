@@ -4,6 +4,7 @@
 import { useEffect, useId, useState, useSyncExternalStore } from 'react'
 import { ArrowDown, ArrowUp, LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { readPrefersReducedMotion } from '@/hooks/theme/usePrefersReducedMotion'
 import { useTranslate } from '@/i18n/use-translate'
 import type { BotItemNeedsYouMark } from './BotItemNeedsYouMark'
 import type { BotItemCommentBoxHandle } from './BotItemCommentBox'
@@ -47,7 +48,7 @@ export function useBotItemNeedsYouJump({
   const below = useSyncExternalStore(watch.subscribe, () => watch.place() === 'below')
   const reveal = (node: HTMLElement): void => {
     watch.revealed()
-    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const still = readPrefersReducedMotion()
     // Lands at the top of the Activity's scroller, just under the fixed header.
     revealRow(node, still ? 'auto' : 'smooth')
     // Keyframes take a color, not a variable: the theme's amber, read on the click.
