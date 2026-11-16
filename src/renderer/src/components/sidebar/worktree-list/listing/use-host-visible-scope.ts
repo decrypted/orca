@@ -7,6 +7,7 @@ import {
   type ExecutionHostId
 } from '../../../../../../shared/execution-host/execution-host'
 import type { SidebarWorktreeFilters } from './use-filters'
+import type { ProjectGroupFilter } from '../../../../../../shared/project/groups/project-group-filter'
 import { filterFolderWorkspacesFromOtherDevices } from '../../../../../../shared/workspace-view/workspace-creator-visibility'
 import { withoutBotListedFolderWorkspaces } from '../../../../../../shared/sidebar-list/selection/visible-worktrees'
 import {
@@ -15,7 +16,7 @@ import {
   getVisibleSidebarHostIdSet
 } from '../../../../../../shared/sidebar-list/hosts/host-filtering'
 
-// Apply host/device scope consistently to repos, project groups and folder workspaces.
+// Apply host/device and project-group scope consistently to repos, project groups and folder workspaces.
 export function useSidebarHostVisibleScope(args: {
   filterState: SidebarWorktreeFilters['filterState']
   defaultHostId: ExecutionHostId
@@ -25,8 +26,10 @@ export function useSidebarHostVisibleScope(args: {
   pairedDeviceIdsByEnvironment: Parameters<typeof filterFolderWorkspacesFromOtherDevices>[1]
   /** Listed under their bot instead (compute-visible-worktrees.ts). */
   botListedWorktreeIdentities?: ReadonlySet<string>
+  projectGroupFilter: ProjectGroupFilter
 }) {
-  const { filterState, defaultHostId, repos, projectGroups, folderWorkspaces } = args
+  const { filterState, defaultHostId, repos, projectGroups, folderWorkspaces, projectGroupFilter } =
+    args
   const { visibleWorkspaceHostIds, workspaceHostScope, hideWorkspacesFromOtherDevices } =
     filterState
   const visibleHostIdSet = useMemo(
@@ -34,19 +37,31 @@ export function useSidebarHostVisibleScope(args: {
     [visibleWorkspaceHostIds, workspaceHostScope]
   )
   const visibleReposForRows = useMemo(() => {
-    if (!visibleHostIdSet) {
+    if (!visibleHostIdSet && !projectGroupFilter.active) {
       return repos
     }
     return repos.filter((repo) => {
+      if (projectGroupFilter.isRepoHidden(repo)) {
+        return false
+      }
+      if (!visibleHostIdSet) {
+        return true
+      }
       const hostId =
         repo.connectionId || repo.executionHostId ? getRepoExecutionHostId(repo) : defaultHostId
       return visibleHostIdSet.has(hostId)
     })
-  }, [defaultHostId, repos, visibleHostIdSet])
-  const visibleProjectGroupsForRows = useMemo(
-    () => filterProjectGroupsForVisibleHosts(projectGroups, visibleHostIdSet, defaultHostId),
-    [defaultHostId, projectGroups, visibleHostIdSet]
-  )
+  }, [defaultHostId, projectGroupFilter, repos, visibleHostIdSet])
+  const visibleProjectGroupsForRows = useMemo(() => {
+    const hostVisibleGroups = filterProjectGroupsForVisibleHosts(
+      projectGroups,
+      visibleHostIdSet,
+      defaultHostId
+    )
+    return projectGroupFilter.active
+      ? hostVisibleGroups.filter((group) => !projectGroupFilter.isGroupHidden(group.id))
+      : hostVisibleGroups
+  }, [defaultHostId, projectGroupFilter, projectGroups, visibleHostIdSet])
   const visibleFolderWorkspacesForRows = useMemo(() => {
     const hostVisibleWorkspaces = filterFolderWorkspacesForVisibleHosts(
       withoutBotListedFolderWorkspaces(folderWorkspaces, args.botListedWorktreeIdentities),
@@ -54,11 +69,16 @@ export function useSidebarHostVisibleScope(args: {
       visibleHostIdSet,
       defaultHostId
     )
+    const groupVisibleWorkspaces = projectGroupFilter.active
+      ? hostVisibleWorkspaces.filter(
+          (folderWorkspace) => !projectGroupFilter.isGroupHidden(folderWorkspace.projectGroupId)
+        )
+      : hostVisibleWorkspaces
     if (!hideWorkspacesFromOtherDevices) {
-      return hostVisibleWorkspaces
+      return groupVisibleWorkspaces
     }
     return filterFolderWorkspacesFromOtherDevices(
-      hostVisibleWorkspaces,
+      groupVisibleWorkspaces,
       args.pairedDeviceIdsByEnvironment
     )
   }, [
@@ -67,6 +87,7 @@ export function useSidebarHostVisibleScope(args: {
     defaultHostId,
     folderWorkspaces,
     hideWorkspacesFromOtherDevices,
+    projectGroupFilter,
     projectGroups,
     visibleHostIdSet
   ])
