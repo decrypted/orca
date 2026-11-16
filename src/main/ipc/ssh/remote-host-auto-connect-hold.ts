@@ -27,9 +27,12 @@ import { quitTeardownStartGate } from '../../startup/quit/quit-teardown-start-ga
 import { isUserConnectInFlight } from './ssh-connect-attempt-registry'
 import {
   disconnectRuntimeEnvironmentForUser,
+  liftSshHostUserDisconnect,
   resumeRuntimeEnvironmentStatus,
   serversOfHeldTargets
 } from './ssh-host-user-disconnect'
+import { disconnectRegisteredSshTarget } from './ssh-session-teardown'
+import { clearSshCredentialDeclined } from '../../ssh/authentication/ssh-credential-decline'
 import { connectionManager } from './ssh-ipc-context'
 
 // An open session stays: holding it would refuse its every later use.
@@ -104,7 +107,35 @@ export async function asUserConnect<T>(
       userConnectingHosts.set(targetId, remaining)
     } else {
       userConnectingHosts.delete(targetId)
+      // Errors inside the window were skipped, so a failed user connect is held here instead.
+      await holdHostIfIdle(targetId)
     }
+  }
+}
+
+/** A user's own action on an SSH host that dials it itself is a Connect of that host. */
+export async function asUserHostAction<T>(targetId: string, action: () => Promise<T>): Promise<T> {
+  let lifted: string[] = []
+  try {
+    return await asUserConnect(targetId, async () => {
+      clearSshCredentialDeclined(targetId)
+      lifted = await liftSshHostUserDisconnect(targetId)
+      return action()
+    })
+  } finally {
+    // After the window closes, so a host held again keeps its servers held.
+    await resumeRuntimeEnvironmentStatus(lifted).catch((error) =>
+      console.warn('[ssh] Resuming servers after a host action failed:', error)
+    )
+  }
+}
+
+async function holdHostIfIdle(targetId: string): Promise<void> {
+  const target = autoConnect ? undefined : getSshTargetRegistryStore()?.getTarget(targetId)
+  if (target) {
+    await holdIdleRemoteHosts([target]).catch((error) =>
+      console.warn('[ssh] Holding a host after a user action failed:', error)
+    )
   }
 }
 
@@ -155,10 +186,8 @@ export async function holdIdleRemoteHosts(targets: readonly SshTarget[]): Promis
       continue
     }
     reasons.set(target.id, REMOTE_HOST_AUTO_CONNECT_OFF_REASON)
-    if (status) {
-      // Close a failed or background-dialing session so the host shows disconnected, like a held one.
-      void connectionManager?.disconnect(target.id).catch(() => {})
-    }
+    // The same teardown as a Disconnect; its own close finds the host held and does not re-enter.
+    void disconnectRegisteredSshTarget(target.id).catch(() => {})
   }
   const userDataPath = getAppEnvironment().getPath('userData')
   const servers = await serversOfHeldTargets(reasons, userDataPath)
