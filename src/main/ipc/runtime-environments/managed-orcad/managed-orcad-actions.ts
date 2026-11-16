@@ -8,7 +8,10 @@ import { getManagedOrcadRuntimeStatus } from '../../../managed-server/lifecycle/
 import { recoverManagedOrcadEnvironment } from '../../../managed-server/lifecycle/orcad-managed-recovery'
 import { rollbackManagedOrcadEnvironment } from '../../../managed-server/lifecycle/orcad-managed-rollback'
 import { updateManagedOrcadEnvironment } from '../../../managed-server/lifecycle/orcad-runtime-maintenance'
-import { getOrcadSshDeployment } from '../../../../shared/remote-runtime/host-catalog/runtime-environments'
+import {
+  getOrcadSshDeployment,
+  getRuntimeSshAccess
+} from '../../../../shared/remote-runtime/host-catalog/runtime-environments'
 import { resolveEnvironment } from '../../../../shared/remote-runtime/host-store/runtime-environment-store'
 import type {
   OrcadManagedRestartResult,
@@ -25,6 +28,7 @@ import {
   resumeRuntimeEnvironmentStatus
 } from '../../ssh/ssh-host-user-disconnect'
 import { releaseUnlinkedHostTransport } from '../../ssh/ssh-session-teardown'
+import { asUserConnect } from '../../ssh/remote-host-auto-connect-hold'
 import type { ManagedServerActions } from '../../../runtime/hosts/management/managed-server-actions-registry'
 import {
   retireRemovedRuntimeEnvironment,
@@ -172,16 +176,18 @@ async function asExplicitServerAction<T>(
   action: () => Promise<T>
 ): Promise<T> {
   let lifted: string[] = []
+  let sshTargetId: string | undefined
   try {
     const environment = await resolveEnvironment(userDataPath, selector)
     forgetManagedOrcadAutomaticFailures(userDataPath, environment.id)
     lifted = await liftUserHoldsForServerAction(environment)
+    sshTargetId = getRuntimeSshAccess(environment)?.sshTargetId
   } catch {
     // An unknown selector fails in the action itself with its own error.
   }
   try {
     // `action` includes its transport invalidation, so resumed status never probes the old transport.
-    return await action()
+    return await asUserConnect(sshTargetId, action)
   } finally {
     await resumeLiftedStatus(lifted)
   }
