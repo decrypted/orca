@@ -5763,7 +5763,8 @@
             "ariaLabel": "{{title}}, {{status}}",
             "onDescription": "Keep this computer awake continuously",
             "autoDescription": "Stay awake while an agent is working",
-            "offDescription": "Allow normal system sleep behavior"
+            "offDescription": "Allow normal system sleep behavior",
+            "timerHeading": "Keep awake for"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "The previous connection closed",
@@ -12279,7 +12280,8 @@
           "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "lidNoteWindows": "Lid-close behavior follows this device's power settings.",
           "lidNoteMac": "Prevents idle sleep with the lid open; closing the lid still puts this Mac to sleep.",
-          "lidNoteDefault": "Orca also asks this device to stay awake when the lid is closed, subject to its power policy."
+          "lidNoteDefault": "Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
+          "timerUntil": "Until {{time}}"
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agent status hooks",
@@ -13312,7 +13314,8 @@
         "AgentAwakeSetting": {
           "on": "On",
           "auto": "Agent",
-          "off": "Off"
+          "off": "Off",
+          "timerActive": "{{until}}, then {{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "This runtime’s GitHub CLI is too old for account binding (needs gh ≥ 2.40).",

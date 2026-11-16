@@ -4755,7 +4755,8 @@
             "ariaLabel": "{{title}}, {{status}}",
             "onDescription": "Maintenir cet ordinateur éveillé en permanence",
             "autoDescription": "Rester éveillé pendant qu'un agent travaille",
-            "offDescription": "Autoriser le comportement de veille normal du système"
+            "offDescription": "Autoriser le comportement de veille normal du système",
+            "timerHeading": "Empêcher la veille pendant"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "La connexion précédente a été fermée",
@@ -11236,7 +11237,8 @@
           "modeDescriptionDefault": "Choisissez Activé, Agent ou Désactivé. Le mode Agent reste éveillé tant que des agents travaillent. Orca demande également à cet appareil de rester éveillé lorsque le capot est fermé, sous réserve de sa politique d'alimentation.",
           "lidNoteMac": "Empêche la mise en veille avec le capot ouvert ; fermer le capot met quand même ce Mac en veille.",
           "lidNoteWindows": "Le comportement de fermeture du couvercle suit les paramètres d'alimentation de cet appareil.",
-          "lidNoteDefault": "Orca demande également à cet appareil de rester éveillé lorsque le couvercle est fermé, sous réserve de sa politique d'alimentation."
+          "lidNoteDefault": "Orca demande également à cet appareil de rester éveillé lorsque le couvercle est fermé, sous réserve de sa politique d'alimentation.",
+          "timerUntil": "Jusqu’à {{time}}"
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Hooks de statut des agents",
@@ -12305,7 +12307,8 @@
         "AgentAwakeSetting": {
           "on": "Activé",
           "auto": "Agent",
-          "off": "Désactivé"
+          "off": "Désactivé",
+          "timerActive": "{{until}}, puis {{mode}}"
         },
         "shareSkills": {
           "description": "Partagez vos skills avec un lien non répertorié. Toute personne qui l'a peut les installer.",
