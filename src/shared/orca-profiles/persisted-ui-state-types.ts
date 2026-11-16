@@ -98,6 +98,8 @@ export type PersistedUIState = {
   /** Per-worktree notification mute. Missing entries inherit the default: not muted. */
   notificationsMutedByWorktree?: Record<string, boolean>
   filterRepoIds: string[]
+  /** Project groups hidden from workspace nav; `UNGROUPED_PROJECT_GROUP_FILTER_ID` stands for ungrouped projects. */
+  hiddenProjectGroupIds?: string[]
   /** Agents host scope stays separate from navigation filters; null means all hosts. */
   agentsVisibleHostIds?: VisibleWorkspaceHostIds
   /** Agents-view project filter; empty = all projects. Separate from filterRepoIds (workspace nav). */

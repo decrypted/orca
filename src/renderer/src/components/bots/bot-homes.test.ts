@@ -4,6 +4,7 @@ import { selectSidebarChildrenByParentIdentity } from '@/store/slices/worktrees/
 import type { Bot } from '../../../../shared/bot-types'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host/execution-host'
 import { indexHiddenProjects } from '../../../../shared/project/catalog/hidden-projects'
+import { NO_PROJECT_GROUP_FILTER } from '../../../../shared/project/groups/project-group-filter'
 import { worktreeWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import { makeFolderWorkspace } from '@/store/folder-workspaces/folder-workspace.test-fixture'
 import {
@@ -141,6 +142,7 @@ describe('getBotListedWorktreeIdentities', () => {
         workspaceHostScope: 'all',
         defaultHostId: LOCAL_EXECUTION_HOST_ID,
         hiddenProjects: indexHiddenProjects([], LOCAL_EXECUTION_HOST_ID),
+        projectGroupFilter: NO_PROJECT_GROUP_FILTER,
         worktreeLineageById: lineage.worktreeLineageById,
         botListedWorktreeIdentities: getBotListedWorktreeIdentities(
           [home],
@@ -179,6 +181,7 @@ describe('getBotListedWorktreeIdentities', () => {
         workspaceHostScope: 'all',
         defaultHostId: LOCAL_EXECUTION_HOST_ID,
         hiddenProjects: indexHiddenProjects([], LOCAL_EXECUTION_HOST_ID),
+        projectGroupFilter: NO_PROJECT_GROUP_FILTER,
         worktreeLineageById: sources.worktreeLineageById,
         botListedWorktreeIdentities: hideBotCreated
           ? getBotListedWorktreeIdentities([home], sidebarChildrenOf(sources))

@@ -6,6 +6,7 @@ import {
   isDetachedHeadWorkspace
 } from '../../../../../shared/worktree/visibility/workspace-kinds'
 import { revealRepoInProjectFilter } from '@/components/sidebar/worktree-list/controls/project-filter-reveal'
+import { revealInSidebarProjectGroupFilter } from '@/components/sidebar/worktree-list/controls/project-group-filter-selection'
 import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
 import { buildVisibleWorktreeOptionsFromState } from '@/components/sidebar/worktree-list/listing/visible-worktree-options-from-state'
 
@@ -27,6 +28,7 @@ export function liftSidebarFiltersHidingWorktree(wt: Worktree): void {
     return
   }
   revealRepoInProjectFilter(state, wt.repoId)
+  revealInSidebarProjectGroupFilter(state, getIndexedRepoMap(state.repos).get(wt.repoId))
   if (state.hideAutomationGeneratedWorkspaces && isAutomationGeneratedWorkspace(wt)) {
     state.setHideAutomationGeneratedWorkspaces(false)
   }
