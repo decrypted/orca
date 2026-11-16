@@ -1,6 +1,7 @@
 import type React from 'react'
 import type { GlobalSettings } from '../../../../../../shared/global-settings-types'
 import { isPortDetectionEnabled } from '../../../../../../shared/workspace/ports/port-detection-settings'
+import { isRemoteHostAutoConnectEnabled } from '../../../../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
 import { useAppStore } from '../../../../store/index'
 import { matchesSettingsSearch } from '../../search/settings-search'
 import { SearchableSetting } from '../../section-layout/SearchableSetting'
@@ -26,8 +27,9 @@ export function BackgroundActivitySettingsSection({
   const group = getBackgroundActivityGroupSearchEntry()
   // A search for the group itself lists every row in it.
   const groupMatches = matchesSettingsSearch(query, group)
-  const portDetection = getBackgroundActivitySearchEntry().portDetection
+  const { portDetection, remoteHostAutoConnect } = getBackgroundActivitySearchEntry()
   const portDetectionEnabled = isPortDetectionEnabled(settings)
+  const remoteHostAutoConnectEnabled = isRemoteHostAutoConnectEnabled(settings)
   return (
     <SettingsGroup title={group.title} description={group.description}>
       <SearchableSetting
@@ -42,6 +44,22 @@ export function BackgroundActivitySettingsSection({
           description={portDetection.description}
           checked={portDetectionEnabled}
           onChange={() => updateSettings({ portDetectionEnabled: !portDetectionEnabled })}
+        />
+      </SearchableSetting>
+      <SearchableSetting
+        title={remoteHostAutoConnect.title}
+        description={remoteHostAutoConnect.description}
+        keywords={remoteHostAutoConnect.keywords}
+        id="background-activity-remote-host-auto-connect"
+        forceVisible={groupMatches}
+      >
+        <SettingsSwitchRow
+          label={remoteHostAutoConnect.title}
+          description={remoteHostAutoConnect.description}
+          checked={remoteHostAutoConnectEnabled}
+          onChange={() =>
+            updateSettings({ remoteHostAutoConnectEnabled: !remoteHostAutoConnectEnabled })
+          }
         />
       </SearchableSetting>
     </SettingsGroup>
