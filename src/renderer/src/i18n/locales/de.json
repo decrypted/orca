@@ -11352,8 +11352,8 @@
           "lidNoteMac": "Verhindert den Ruhezustand bei Inaktivität bei geöffnetem Deckel; beim Zuklappen wechselt dieser Mac weiterhin in den Ruhezustand.",
           "lidNoteDefault": "Orca fordert das Gerät auch bei geschlossenem Deckel auf, wach zu bleiben, soweit dessen Energierichtlinie dies zulässt.",
           "timerUntil": "Bis {{time}}",
-          "modeDescriptionLidSleeps": "Wähle Ein, Agent oder Aus. Im Agent-Modus bleibt der Computer wach, solange Agents arbeiten. Beim Zuklappen geht dieses Gerät trotzdem in den Ruhezustand.",
-          "lidNoteLidSleeps": "Beim Zuklappen geht dieses Gerät trotzdem in den Ruhezustand."
+          "modeDescriptionLidSleeps": "Wähle Ein, Agent oder Aus. Im Agent-Modus bleibt der Computer wach, solange Agents arbeiten. Beim Zuklappen geht dieses Gerät trotzdem in den Ruhezustand, außer logind ist so eingestellt, dass es Schlafsperren beachtet (LidSwitchIgnoreInhibited=no).",
+          "lidNoteLidSleeps": "Beim Zuklappen geht dieses Gerät trotzdem in den Ruhezustand, außer logind ist so eingestellt, dass es Schlafsperren beachtet (LidSwitchIgnoreInhibited=no)."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agentenstatus-Hooks",
@@ -13456,9 +13456,10 @@
           "onlyWhilePluggedIn": "Nur mit Netzteil",
           "onlyWhilePluggedInDescription": "Im Akkubetrieb schläft der Computer normal; das Wachhalten setzt wieder ein, sobald er angeschlossen ist.",
           "floorLabel": "Im Akkubetrieb pausieren unter",
-          "floorDescription": "Unter diesem Ladestand schläft der Computer normal; das Wachhalten setzt wieder ein, wenn er angeschlossen ist oder {{margin}} Prozentpunkte darüber liegt.",
+          "floorDescription": "Unter diesem Ladestand schläft der Computer normal, bis er wieder angeschlossen ist.",
           "lidLabel": "Zuklappen versetzt den Computer in den Ruhezustand",
-          "lidDescription": "Aus bittet dieses Gerät, auch zugeklappt wach zu bleiben, sofern seine Energierichtlinie das erlaubt."
+          "lidDescription": "Aus bittet dieses Gerät, auch zugeklappt wach zu bleiben, sofern seine Energierichtlinie das erlaubt.",
+          "windowsNoFloor": "Windows liefert Orca keinen Ladestand, daher bleibt der Computer im Akkubetrieb ohne Ladegrenze wach."
         }
       },
       "right": {

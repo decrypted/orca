@@ -11350,8 +11350,8 @@
           "lidNoteWindows": "合盖行为遵循该设备的电源设置",
           "lidNoteDefault": "Orca 还要求该设备在盖子关闭时保持唤醒状态，具体取决于其电源策略",
           "timerUntil": "直到 {{time}}",
-          "modeDescriptionLidSleeps": "选择开启、代理或关闭。代理模式会在代理工作时防止休眠。合上盖子时此设备仍会进入睡眠。",
-          "lidNoteLidSleeps": "合上盖子时此设备仍会进入睡眠。"
+          "modeDescriptionLidSleeps": "选择开启、代理或关闭。代理模式会在代理工作时防止休眠。除非 logind 设置为遵守睡眠锁 (LidSwitchIgnoreInhibited=no)，否则合上盖子时此设备仍会进入睡眠。",
+          "lidNoteLidSleeps": "除非 logind 设置为遵守睡眠锁 (LidSwitchIgnoreInhibited=no)，否则合上盖子时此设备仍会进入睡眠。"
         },
         "AgentAwakeSetting": {
           "on": "开启",
@@ -13640,9 +13640,10 @@
           "onlyWhilePluggedIn": "仅在接通电源时",
           "onlyWhilePluggedInDescription": "使用电池时电脑会正常睡眠；重新接通电源后将恢复防止休眠。",
           "floorLabel": "使用电池时，低于此电量暂停",
-          "floorDescription": "低于此电量时电脑会正常睡眠；接通电源或电量高出 {{margin}} 个百分点后将恢复防止休眠。",
+          "floorDescription": "低于此电量时，电脑会正常睡眠，直到重新接通电源。",
           "lidLabel": "合上盖子时让电脑睡眠",
-          "lidDescription": "关闭后，会在电源策略允许的范围内请求此设备在合盖时保持唤醒。"
+          "lidDescription": "关闭后，会在电源策略允许的范围内请求此设备在合盖时保持唤醒。",
+          "windowsNoFloor": "Windows 不向 Orca 提供电量信息，因此使用电池时电脑会在没有电量下限的情况下保持唤醒。"
         }
       },
       "right": {
