@@ -35,6 +35,23 @@
 @custom-variant can-hover (@media (hover: hover));
 /* Set by use-reduce-visual-effects for the setting or OS reduced transparency. */
 @custom-variant reduce-effects (&:where(:root[data-reduce-effects] *));
+/* Reduce motion "Always" sets data-reduce-motion; a prefix, since a suffix would follow ::before.
+   @variant drops ::before from a selector list (nesting wraps it in :is()), so give it its own rule. */
+@custom-variant motion-reduce {
+  @media (prefers-reduced-motion: reduce) {
+    @slot;
+  }
+  :where(:root[data-reduce-motion]) & {
+    @slot;
+  }
+}
+@custom-variant motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
+    :where(:root:not([data-reduce-motion])) & {
+      @slot;
+    }
+  }
+}
 
 .theme-transition-disabled *,
 .theme-transition-disabled *::before,
@@ -2147,8 +2164,8 @@ html.native-shell .app-layout {
   animation: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .agent-working-spinner {
+.agent-working-spinner {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -2253,16 +2270,20 @@ html.native-shell .app-layout {
   border-left-color: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .compact-agent-expansion-grid {
+.compact-agent-expansion-grid {
+  @variant motion-reduce {
     transition-duration: 0ms;
   }
+}
 
-  .compact-agent-expansion-grid-expanded .compact-agent-expansion-content {
+.compact-agent-expansion-grid-expanded .compact-agent-expansion-content {
+  @variant motion-reduce {
     animation-duration: 0ms;
   }
+}
 
-  .compact-agent-summary-panel {
+.compact-agent-summary-panel {
+  @variant motion-reduce {
     transition-duration: 0ms;
   }
 }
@@ -2316,8 +2337,8 @@ html.native-shell .app-layout {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .scroll-to-current-workspace-reveal-highlight::before {
+.scroll-to-current-workspace-reveal-highlight::before {
+  @variant motion-reduce {
     animation: none;
     opacity: 1;
     transform: none;
@@ -2371,8 +2392,8 @@ html.native-shell .app-layout {
   border-radius: var(--radius-md);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .settings-target-highlight {
+.settings-target-highlight {
+  @variant motion-safe {
     animation: settings-target-highlight-fade 3s ease-out forwards;
   }
 }
@@ -2483,9 +2504,9 @@ html.native-shell .app-layout {
   animation: collapsible-up 180ms ease-out;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .collapsible-height-content[data-state='open'],
-  .collapsible-height-content[data-state='closed'] {
+.collapsible-height-content[data-state='open'],
+.collapsible-height-content[data-state='closed'] {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -2569,8 +2590,8 @@ html.native-shell .app-layout {
   animation: workspace-board-trigger-preview-pulse 1.4s ease-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  [data-workspace-board-trigger][data-workspace-board-preview='true'] {
+[data-workspace-board-trigger][data-workspace-board-preview='true'] {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -3129,8 +3150,8 @@ html.native-shell .app-layout {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tab-entry-omnibox::after {
+.tab-entry-omnibox::after {
+  @variant motion-reduce {
     animation: none !important;
   }
 }
@@ -3290,20 +3311,26 @@ html.native-shell .app-layout {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .onboarding-launch-demo * {
+.onboarding-launch-demo * {
+  @variant motion-reduce {
     animation: none !important;
   }
+}
 
-  .onboarding-launch-demo [data-demo='menu'] {
+.onboarding-launch-demo [data-demo='menu'] {
+  @variant motion-reduce {
     opacity: 1;
   }
+}
 
-  .onboarding-launch-demo [data-demo='picked-row'] {
+.onboarding-launch-demo [data-demo='picked-row'] {
+  @variant motion-reduce {
     background: var(--accent);
   }
+}
 
-  .onboarding-launch-demo [data-demo='cursor'] {
+.onboarding-launch-demo [data-demo='cursor'] {
+  @variant motion-reduce {
     transform: translate(130px, 112px);
   }
 }
@@ -3338,14 +3365,16 @@ html.native-shell .app-layout {
   animation: cli-tip-command-line 160ms ease-out both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-cli-tip-caret {
+.animate-cli-tip-caret {
+  @variant motion-reduce {
     animation: none;
     opacity: 1;
     transform: none;
   }
+}
 
-  .animate-cli-tip-command-line {
+.animate-cli-tip-command-line {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -3416,13 +3445,15 @@ html.native-shell .app-layout {
   animation: cmd-j-tip-result-in 120ms ease-out both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-cmd-j-tip-caret {
+.animate-cmd-j-tip-caret {
+  @variant motion-reduce {
     animation: none;
     opacity: 1;
   }
+}
 
-  .animate-cmd-j-tip-result-in {
+.animate-cmd-j-tip-result-in {
+  @variant motion-reduce {
     animation: none;
     opacity: 1;
     transform: none;
@@ -3669,8 +3700,8 @@ body:has([data-contextual-tour-target='tab-create-menu'][data-state='open'])
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .orca-contextual-tour-target-rings::before {
+.orca-contextual-tour-target-rings::before {
+  @variant motion-reduce {
     animation: none;
     opacity: 0.72;
     transform: scale(1.28);
@@ -4100,8 +4131,8 @@ body:has([data-contextual-tour-target='tab-create-menu'][data-state='open'])
   text-overflow: ellipsis;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .workspace-reference-title[data-overflow='true']:is(:hover, :focus-visible) > span {
+.workspace-reference-title[data-overflow='true']:is(:hover, :focus-visible) > span {
+  @variant motion-safe {
     width: max-content;
     overflow: visible;
     transform: translateX(var(--reference-title-offset));
@@ -4174,13 +4205,20 @@ body:has([data-contextual-tour-target='tab-create-menu'][data-state='open'])
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .browser-agent-cursor-glyph,
-  .browser-agent-cursor-layer::before {
+.browser-agent-cursor-glyph {
+  @variant motion-reduce {
     transition: none;
   }
+}
 
-  .browser-agent-cursor-layer[data-agent-active]::before {
+.browser-agent-cursor-layer::before {
+  @variant motion-reduce {
+    transition: none;
+  }
+}
+
+.browser-agent-cursor-layer[data-agent-active]::before {
+  @variant motion-reduce {
     animation: none;
   }
 }

@@ -20,6 +20,7 @@ import { I18nProvider } from './i18n/I18nProvider'
 import { useAppStore } from './store/index'
 import { installBodyOverlayAttributes } from './lib/overlay-interaction/body-overlay-attributes'
 import { useReduceVisualEffects } from './hooks/theme/use-reduce-visual-effects'
+import { useReduceMotionSetting } from './hooks/theme/usePrefersReducedMotion'
 
 const disposeBodyOverlayAttributes = installBodyOverlayAttributes()
 import.meta.hot?.dispose(disposeBodyOverlayAttributes)
@@ -31,6 +32,7 @@ function SpaceWindowRoot(): React.JSX.Element {
   const settings = useAppStore((state) => state.settings)
   const activeModal = useAppStore((state) => state.activeModal)
   useReduceVisualEffects(settings?.reduceVisualEffects)
+  useReduceMotionSetting(settings?.reduceMotion)
   useAppThemePaint()
 
   useEffect(() => {

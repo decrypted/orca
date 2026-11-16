@@ -5,6 +5,7 @@ import { WorktreeListSlide } from './slides/WorktreeListSlide'
 import { TerminalSlide } from './slides/TerminalSlide'
 import { useTranslate } from '@/i18n/use-translate'
 import { forceLayoutReflow } from '@/lib/overlay-interaction/force-layout-reflow'
+import { usePrefersReducedMotion } from '@/hooks/theme/usePrefersReducedMotion'
 
 const DWELL_MS = 4500
 const TAP_BEFORE_PUSH_MS = 240
@@ -17,14 +18,11 @@ export function PhoneCarousel(): React.JSX.Element {
   const [phase, setPhase] = useState<Phase>('normal')
   const [tappingSlide, setTappingSlide] = useState<number | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const reduceMotion = usePrefersReducedMotion()
 
   // oxlint-disable-next-line react-doctor/effect-needs-cleanup -- Cleanup clears all four timers the schedule chain re-arms.
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduce) {
+    if (reduceMotion) {
       return
     }
 
@@ -86,7 +84,7 @@ export function PhoneCarousel(): React.JSX.Element {
         clearTimeout(resetTimer)
       }
     }
-  }, [])
+  }, [reduceMotion])
 
   // Flush the no-transition reset before re-enabling transitions for the next slide.
   useEffect(() => {

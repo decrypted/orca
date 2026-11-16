@@ -11,6 +11,7 @@ import { getUsagePercentageDisplayEntry } from './appearance-usage-percentage-se
 import { getStatusBarUsageFormatEntry } from './appearance-status-bar-usage-format-search'
 import { getMenuBarIconEntries, getSystemTrayEntries } from './appearance-system-presence-search'
 import { getReduceVisualEffectsEntries } from './appearance-reduce-visual-effects-search'
+import { getReduceMotionEntries } from './appearance-reduce-motion-search'
 import { getAppIconEntries } from './appearance-app-icon-search'
 
 export const getThemeEntries = createLocalizedCatalog((): SettingsSearchEntry[] => [
@@ -281,6 +282,7 @@ export function getAppearancePaneSearchEntries(
     ...getLayoutEntries(),
     ...getTitlebarEntries(),
     ...getReduceVisualEffectsEntries(),
+    ...getReduceMotionEntries(),
     ...getStatusBarEntries(),
     ...getSidebarEntries(),
     ...getAppIconEntries(),
