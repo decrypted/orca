@@ -181,7 +181,6 @@ export function buildDefaultSettings(args: {
     sourceControlGroupOrder: DEFAULT_SOURCE_CONTROL_GROUP_ORDER,
     sourceControlCompareAgainstUpstream: false,
     prAutoRefresh: 'default',
-    portDetectionEnabled: true,
     showTitlebarAppName: true,
     linuxTilingWindowMode: false,
     showTasksButton: true,
