@@ -7,6 +7,7 @@ import { SshPane } from '../ssh/SshPane'
 import { SshHostsHeaderSlot, SshHostsHeaderSlotProvider } from '../ssh/ssh-hosts-header-slot'
 import { SettingsSection } from '../section-layout/SettingsSection'
 import { RemoteHostAutoConnectGroup } from '../remote-host-auto-connect/RemoteHostAutoConnectSetting'
+import { SSH_REMOTE_HOST_AUTO_CONNECT_ID } from '../ssh/ssh-search'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import type { SettingsRenderContext } from './settings-render-context'
@@ -79,6 +80,13 @@ export function renderSshSettingsSection(
         searchEntries={navigation.getSectionSearchEntries('ssh')}
         headerAction={mounted ? <SshHostsHeaderSlot /> : undefined}
       >
+        {mounted ? (
+          <RemoteHostAutoConnectGroup
+            settings={model.settings}
+            updateSettings={model.updateSettings}
+            id={SSH_REMOTE_HOST_AUTO_CONNECT_ID}
+          />
+        ) : null}
         {mounted ? <SshPane addTargetIntentSignal={model.sshHostAddIntentSignal} /> : null}
       </SettingsSection>
     </SshHostsHeaderSlotProvider>
