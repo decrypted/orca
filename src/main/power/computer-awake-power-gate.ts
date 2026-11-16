@@ -8,8 +8,7 @@ import {
 import type { PowerSupplyReader } from './power-supply-reader'
 
 const POWER_SUPPLY_POLL_MS = 60_000
-// A machine that reported no battery rarely grows one; keep checking, just rarely.
-const NO_BATTERY_POLL_MS = 15 * 60_000
+const MAX_BATTERY_LEVEL_POLL_MS = 10 * 60_000
 
 // Overloads, so Electron's per-event powerMonitor signatures are assignable.
 export type PowerSourceEvents = {
@@ -27,28 +26,36 @@ type Logger = Pick<Console, 'warn'>
 export class ComputerAwakePowerGate {
   private policy: ComputerAwakePowerPolicy = readComputerAwakePowerPolicy(null)
   private supply: PowerSupplyState | null = null
+  private readAt: number | null = null
+  // A power event or policy change since the last read means it no longer describes the machine.
+  private stale = true
+  private reading = false
+  private rereadQueued = false
   private pause: ComputerAwakePause | null = null
   private watching = false
-  private readGeneration = 0
   private pollTimer: ReturnType<typeof setTimeout> | null = null
   private readonly unsubscribeEvents: (() => void) | null
 
   constructor(
-    private readonly read: PowerSupplyReader,
+    private readonly reader: PowerSupplyReader,
     private readonly onChange: () => void,
     private readonly logger: Logger,
-    events: PowerSourceEvents | null
+    events: PowerSourceEvents | null,
+    private readonly now: () => number
   ) {
     if (events) {
-      const onPowerSourceChange = (): void => this.readNow()
-      // Linux emits only resume, so polling covers unplugging there.
-      events.on('on-ac', onPowerSourceChange)
-      events.on('on-battery', onPowerSourceChange)
-      events.on('resume', onPowerSourceChange)
+      const onPowerSource = (): void => this.markStale()
+      const onResume = (): void => {
+        this.reader.invalidate?.()
+        this.markStale()
+      }
+      events.on('on-ac', onPowerSource)
+      events.on('on-battery', onPowerSource)
+      events.on('resume', onResume)
       this.unsubscribeEvents = () => {
-        events.off('on-ac', onPowerSourceChange)
-        events.off('on-battery', onPowerSourceChange)
-        events.off('resume', onPowerSourceChange)
+        events.off('on-ac', onPowerSource)
+        events.off('on-battery', onPowerSource)
+        events.off('resume', onResume)
       }
     } else {
       this.unsubscribeEvents = null
@@ -60,7 +67,13 @@ export class ComputerAwakePowerGate {
   }
 
   setPolicy(policy: ComputerAwakePowerPolicy): void {
+    const levelNeedChanged = policy.onlyWhilePluggedIn !== this.policy.onlyWhilePluggedIn
     this.policy = policy
+    if (levelNeedChanged) {
+      this.markStale()
+    } else {
+      this.scheduleNextRead()
+    }
   }
 
   getPause(): ComputerAwakePause | null {
@@ -70,7 +83,7 @@ export class ComputerAwakePowerGate {
   /** Why a wanted block must be released right now, or null to hold it. */
   evaluate(wanted: boolean): ComputerAwakePause | null {
     this.setWatching(wanted)
-    this.pause = wanted ? resolveComputerAwakePause(this.policy, this.supply, this.pause) : null
+    this.pause = wanted ? this.resolvePause() : null
     return this.pause
   }
 
@@ -79,47 +92,104 @@ export class ComputerAwakePowerGate {
     this.unsubscribeEvents?.()
   }
 
+  private resolvePause(): ComputerAwakePause | null {
+    return resolveComputerAwakePause(this.policy, this.supply, this.pause)
+  }
+
   private setWatching(watching: boolean): void {
     if (this.watching === watching) {
       return
     }
     this.watching = watching
-    if (watching) {
+    if (!watching) {
+      this.clearPollTimer()
+    } else if (this.isReadingCurrent()) {
+      this.scheduleNextRead()
+    } else {
       this.readNow()
-      return
     }
-    this.readGeneration += 1
-    this.clearPollTimer()
+  }
+
+  private markStale(): void {
+    this.stale = true
+    if (this.watching) {
+      this.readNow()
+    }
+  }
+
+  /** Null when nothing can change without a power event: no battery, or a platform with events. */
+  private pollDelay(): number | null {
+    const supply = this.supply
+    if (!supply) {
+      return null
+    }
+    const levelMatters =
+      !this.policy.onlyWhilePluggedIn && supply.onBattery && supply.batteryPercent !== null
+    if (levelMatters && this.resolvePause() !== 'low-battery') {
+      // The charge falls about a point a minute at most, so a wide margin can wait longer.
+      const margin = (supply.batteryPercent ?? 0) - this.policy.batteryFloorPercent
+      return Math.min(Math.max(margin * 60_000, POWER_SUPPLY_POLL_MS), MAX_BATTERY_LEVEL_POLL_MS)
+    }
+    return this.reader.needsPolling ? POWER_SUPPLY_POLL_MS : null
+  }
+
+  private isReadingCurrent(): boolean {
+    if (this.stale || this.readAt === null) {
+      return false
+    }
+    const delay = this.pollDelay()
+    return delay === null || this.now() - this.readAt < delay
   }
 
   private readNow(): void {
-    if (!this.watching) {
+    if (this.reading) {
+      this.rereadQueued = true
       return
     }
+    this.reading = true
     this.clearPollTimer()
-    const generation = ++this.readGeneration
-    void this.read()
+    void this.reader
+      .read(!this.policy.onlyWhilePluggedIn)
       .catch((error: unknown) => {
         this.logger.warn('[agent-awake] failed to read the power supply', { error })
         return null
       })
-      .then((supply) => {
-        if (generation !== this.readGeneration) {
-          return
-        }
-        const changed =
-          supply?.onBattery !== this.supply?.onBattery ||
-          supply?.batteryPercent !== this.supply?.batteryPercent
-        this.supply = supply
-        this.pollTimer = setTimeout(
-          () => this.readNow(),
-          supply ? POWER_SUPPLY_POLL_MS : NO_BATTERY_POLL_MS
-        )
-        this.pollTimer.unref?.()
-        if (changed) {
-          this.onChange()
-        }
-      })
+      .then((supply) => this.finishRead(supply))
+  }
+
+  private finishRead(supply: PowerSupplyState | null): void {
+    this.reading = false
+    if (this.rereadQueued) {
+      this.rereadQueued = false
+      this.readNow()
+      return
+    }
+    this.supply = supply
+    this.readAt = this.now()
+    this.stale = false
+    if (!this.watching) {
+      return
+    }
+    this.scheduleNextRead()
+    if (this.resolvePause() !== this.pause) {
+      this.onChange()
+    }
+  }
+
+  private scheduleNextRead(): void {
+    this.clearPollTimer()
+    const delay = this.pollDelay()
+    if (!this.watching || this.reading || delay === null || this.readAt === null) {
+      return
+    }
+    this.pollTimer = setTimeout(
+      () => {
+        this.pollTimer = null
+        this.readNow()
+      },
+      Math.max(0, this.readAt + delay - this.now())
+    )
+    this.pollTimer.unref?.()
   }
 
   private clearPollTimer(): void {
