@@ -5098,7 +5098,8 @@
             "ariaLabel": "{{title}}, {{status}}",
             "onDescription": "Mantener esta computadora activa en todo momento",
             "autoDescription": "Mantener la computadora activa mientras un agente está trabajando",
-            "offDescription": "Permitir que el sistema entre en suspensión normalmente"
+            "offDescription": "Permitir que el sistema entre en suspensión normalmente",
+            "timerHeading": "Mantener activa durante"
           },
           "StatusBar": {
             "9659e38343": "Puertos",
@@ -12066,12 +12067,14 @@
           "modeDescriptionWindows": "Elija Activado, Agente o Desactivado. El modo agente permanece activo mientras los agentes están trabajando; El comportamiento de cierre de la tapa sigue la configuración de energía de este dispositivo.",
           "modeDescriptionDefault": "Elija Activado, Agente o Desactivado. El modo de agente permanece activo mientras los agentes están trabajando. Orca también le pide a este dispositivo que permanezca despierto cuando la tapa está cerrada, sujeto a su política de energía.",
           "lidNoteWindows": "El comportamiento de cierre de la tapa sigue la configuración de energía de este dispositivo.",
-          "lidNoteDefault": "Orca también le pide a este dispositivo que permanezca despierto cuando la tapa está cerrada, sujeto a su política de energía."
+          "lidNoteDefault": "Orca también le pide a este dispositivo que permanezca despierto cuando la tapa está cerrada, sujeto a su política de energía.",
+          "timerUntil": "Hasta las {{time}}"
         },
         "AgentAwakeSetting": {
           "on": "Activado",
           "auto": "Agente",
-          "off": "Desactivado"
+          "off": "Desactivado",
+          "timerActive": "{{until}}, después {{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "La CLI de GitHub de este runtime es demasiado antigua para vincular cuentas (necesita gh ≥ 2.40).",
