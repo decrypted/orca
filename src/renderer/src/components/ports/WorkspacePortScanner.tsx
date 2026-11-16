@@ -22,6 +22,7 @@ import {
 import type { WorkspacePortScanResult } from '../../../../shared/workspace/ports/workspace-ports'
 import { buildExecutionHostRegistry } from '../../../../shared/execution-host/execution-host-registry'
 import { isPortDetectionEnabled } from '../../../../shared/workspace/ports/port-detection-settings'
+import type { RuntimeEnvironmentStatus } from '../../../../shared/remote-runtime/host-status/runtime-host-status'
 
 const WORKSPACE_PORT_SCAN_INTERVAL_MS = 30_000
 const WORKSPACE_PORT_ADVERTISED_URL_SETTLE_MS = 1_000
@@ -33,6 +34,17 @@ type WorkspacePortScannerRefreshOptions = {
 const WORKSPACE_PORT_SCAN_FAILURE_THRESHOLD = 2
 // Why: advertised-URL events come from this app's own processes, whatever server is the default.
 const LOCAL_TARGET: RuntimeClientTarget = { kind: 'local' }
+
+/** Servers whose status owner is retired, such as held or disconnected ones, answer scans with a refusal. */
+function retiredEnvironmentIdsKey(statuses: ReadonlyMap<string, RuntimeEnvironmentStatus>): string {
+  const ids: string[] = []
+  for (const [environmentId, entry] of statuses) {
+    if (entry.snapshot?.retired) {
+      ids.push(environmentId)
+    }
+  }
+  return ids.sort().join('\n')
+}
 
 function makeUnavailableScan(reason: string): WorkspacePortScanResult {
   return {
@@ -52,6 +64,11 @@ export function WorkspacePortScanner({
   const detectionEnabled = settings !== null && isPortDetectionEnabled(settings)
   const enabled = sessionReady && detectionEnabled
   const repos = useAppStore((s) => s.repos)
+  const runtimeStatuses = useAppStore((s) => s.runtimeStatusByEnvironmentId)
+  const retiredEnvironmentIds = useMemo(
+    () => retiredEnvironmentIdsKey(runtimeStatuses),
+    [runtimeStatuses]
+  )
   const hasWorktrees = useAppStore((state) =>
     getCachedHasAnyWorktrees(selectWorktreesByRepo(state))
   )
@@ -66,13 +83,15 @@ export function WorkspacePortScanner({
   const scanTargetsRef = useRef<RuntimeClientTarget[]>([])
   const portScanDebounceRef = useRef<PortScanDebounceState>(new Map())
 
-  const scanTargets = useMemo(
-    () =>
-      buildExecutionHostRegistry({ repos, settings })
-        .map((host) => runtimeRpcTargetForAuthorityKey(host.id))
-        .filter((target): target is NonNullable<typeof target> => target !== null),
-    [repos, settings]
-  )
+  const scanTargets = useMemo(() => {
+    const retired = new Set(retiredEnvironmentIds.split('\n'))
+    return buildExecutionHostRegistry({ repos, settings })
+      .map((host) => runtimeRpcTargetForAuthorityKey(host.id))
+      .filter(
+        (target): target is NonNullable<typeof target> =>
+          target !== null && (target.kind !== 'environment' || !retired.has(target.environmentId))
+      )
+  }, [repos, settings, retiredEnvironmentIds])
   const scanTargetsSignature = useMemo(
     () =>
       scanTargets

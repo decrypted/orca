@@ -13,14 +13,18 @@ import {
   isSshUserDisconnected,
   liftSshAutoConnectOffHolds
 } from '../../ssh/connection/ssh-user-disconnect'
-import { listRegisteredSshTargets } from '../../ssh/targets/ssh-target-registry'
+import {
+  getSshTargetRegistryStore,
+  listRegisteredSshTargets
+} from '../../ssh/targets/ssh-target-registry'
 import { isRuntimeOwnedSshTarget } from '../../ssh/targets/ssh-target-runtime-ownership'
 import {
   clearRuntimeEnvironmentManualDisconnect,
   isRuntimeEnvironmentManuallyDisconnected,
   runtimeEnvironmentManualDisconnectReason
 } from '../runtime-environments/connectivity/runtime-environment-manual-disconnect'
-import { connectInFlight } from './ssh-connect-attempt-registry'
+import { quitTeardownStartGate } from '../../startup/quit/quit-teardown-start-gate'
+import { isUserConnectInFlight } from './ssh-connect-attempt-registry'
 import {
   disconnectRuntimeEnvironmentForUser,
   resumeRuntimeEnvironmentStatus,
@@ -40,9 +44,22 @@ const SESSION_BY_STATUS: Record<SshConnectionStatus, boolean> = {
   error: false
 }
 
+const SESSION_ENDED_BY_STATUS: Record<SshConnectionStatus, boolean> = {
+  disconnected: true,
+  connecting: false,
+  'auth-failed': true,
+  'deploying-relay': false,
+  connected: false,
+  reconnecting: false,
+  'reconnection-failed': true,
+  error: true
+}
+
 let autoConnect = true
 let stopFollowing: (() => void) | undefined
 let applying: Promise<void> = Promise.resolve()
+/** Hosts a user action is connecting outside `connectTarget`, such as a server's Connect. */
+const userConnectingHosts = new Map<string, number>()
 
 export function isRemoteHostAutoConnectOn(): boolean {
   return autoConnect
@@ -71,6 +88,56 @@ export function followRemoteHostAutoConnectSetting(store: {
   })
 }
 
+export async function asUserConnect<T>(
+  targetId: string | undefined,
+  connect: () => Promise<T>
+): Promise<T> {
+  if (!targetId) {
+    return connect()
+  }
+  userConnectingHosts.set(targetId, (userConnectingHosts.get(targetId) ?? 0) + 1)
+  try {
+    return await connect()
+  } finally {
+    const remaining = (userConnectingHosts.get(targetId) ?? 1) - 1
+    if (remaining > 0) {
+      userConnectingHosts.set(targetId, remaining)
+    } else {
+      userConnectingHosts.delete(targetId)
+    }
+  }
+}
+
+function isUserConnecting(targetId: string): boolean {
+  return isUserConnectInFlight(targetId) || userConnectingHosts.has(targetId)
+}
+
+/** A connect lifts the hold for good, so hold again once its session ends after any redial ladder. */
+export function holdRemoteHostWhoseSessionEnded(
+  targetId: string,
+  status: SshConnectionStatus
+): void {
+  // An already held host returns here, so the close below cannot re-enter.
+  if (
+    autoConnect ||
+    !SESSION_ENDED_BY_STATUS[status] ||
+    isSshUserDisconnected(targetId) ||
+    quitTeardownStartGate.hasStarted()
+  ) {
+    return
+  }
+  // A dial replacing an old session closes it first; that dial's own outcome decides.
+  if (status === 'disconnected' && connectionManager?.isDialing(targetId)) {
+    return
+  }
+  const target = getSshTargetRegistryStore()?.getTarget(targetId)
+  if (target) {
+    void holdIdleRemoteHosts([target]).catch((error) =>
+      console.warn('[ssh] Holding a host after its session ended failed:', error)
+    )
+  }
+}
+
 /** While automatic connects are off, hold hosts with no session as if the user had disconnected them. */
 export async function holdIdleRemoteHosts(targets: readonly SshTarget[]): Promise<void> {
   if (autoConnect) {
@@ -81,7 +148,7 @@ export async function holdIdleRemoteHosts(targets: readonly SshTarget[]): Promis
     const status = connectionManager?.getState(target.id)?.status
     if (
       isRuntimeOwnedSshTarget(target) ||
-      connectInFlight.has(target.id) ||
+      isUserConnecting(target.id) ||
       (status && SESSION_BY_STATUS[status]) ||
       !holdSshTargetForAutoConnectOff(target.id)
     ) {
@@ -134,4 +201,5 @@ export function resetRemoteHostAutoConnectForTests(): void {
   stopFollowing = undefined
   autoConnect = true
   applying = Promise.resolve()
+  userConnectingHosts.clear()
 }

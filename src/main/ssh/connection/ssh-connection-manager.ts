@@ -193,6 +193,10 @@ export class SshConnectionManager {
     return restarted
   }
 
+  isDialing(targetId: string): boolean {
+    return this.connectingTargets.has(targetId)
+  }
+
   getConnection(targetId: string): SshConnection | undefined {
     return this.connections.get(targetId)
   }
