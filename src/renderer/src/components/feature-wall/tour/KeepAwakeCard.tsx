@@ -10,6 +10,7 @@ import {
   computerAwakeSettingsForMode,
   normalizeComputerAwakeMode
 } from '../../../../../shared/app-lifecycle/computer-awake-mode'
+import { readComputerAwakePowerPolicy } from '../../../../../shared/app-lifecycle/computer-awake-power-policy'
 
 export function KeepAwakeCard(props: {
   settings: GlobalSettings
@@ -34,7 +35,11 @@ export function KeepAwakeCard(props: {
             </span>
           </div>
           <p className="text-[13px] leading-snug text-muted-foreground">
-            {getAgentAwakeDescription(undefined, t)}
+            {getAgentAwakeDescription(
+              undefined,
+              t,
+              readComputerAwakePowerPolicy(settings).lidCloseSleeps
+            )}
           </p>
         </div>
         <Switch

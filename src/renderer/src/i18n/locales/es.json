@@ -5099,7 +5099,10 @@
             "onDescription": "Mantener esta computadora activa en todo momento",
             "autoDescription": "Mantener la computadora activa mientras un agente está trabajando",
             "offDescription": "Permitir que el sistema entre en suspensión normalmente",
-            "timerHeading": "Mantener activa durante"
+            "timerHeading": "Mantener activa durante",
+            "pausedOnBattery": "En pausa con batería",
+            "pausedLowBattery": "En pausa por debajo de {{percent}}",
+            "batterySettings": "Ajustes de batería y tapa…"
           },
           "StatusBar": {
             "9659e38343": "Puertos",
@@ -12068,7 +12071,9 @@
           "modeDescriptionDefault": "Elija Activado, Agente o Desactivado. El modo de agente permanece activo mientras los agentes están trabajando. Orca también le pide a este dispositivo que permanezca despierto cuando la tapa está cerrada, sujeto a su política de energía.",
           "lidNoteWindows": "El comportamiento de cierre de la tapa sigue la configuración de energía de este dispositivo.",
           "lidNoteDefault": "Orca también le pide a este dispositivo que permanezca despierto cuando la tapa está cerrada, sujeto a su política de energía.",
-          "timerUntil": "Hasta las {{time}}"
+          "timerUntil": "Hasta las {{time}}",
+          "modeDescriptionLidSleeps": "Elige Activado, Agente o Desactivado. El modo Agente se mantiene activo mientras los agentes trabajan. Al cerrar la tapa, este dispositivo se suspende igualmente.",
+          "lidNoteLidSleeps": "Al cerrar la tapa, este dispositivo se suspende igualmente."
         },
         "AgentAwakeSetting": {
           "on": "Activado",
@@ -14394,6 +14399,14 @@
           "shownPluginCount_other": "{{count}} complementos coincidentes mostrados, incluido este",
           "samePublisher": "Más elementos incluidos como {{value0}}",
           "shownPluginCount_many": "{{count}} complementos coincidentes mostrados, incluido este"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "Solo con el cargador conectado",
+          "onlyWhilePluggedInDescription": "Con batería, la computadora se suspende con normalidad; se vuelve a mantener activa al conectarla de nuevo.",
+          "floorLabel": "Con batería, pausar por debajo de",
+          "floorDescription": "Por debajo de esta carga, la computadora se suspende con normalidad; se vuelve a mantener activa al conectarla o al superar el umbral en {{margin}} puntos.",
+          "lidLabel": "Cerrar la tapa suspende la computadora",
+          "lidDescription": "Desactivado pide a este dispositivo que siga activo con la tapa cerrada, según su política de energía."
         }
       },
       "right": {
