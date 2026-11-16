@@ -36,6 +36,9 @@ export class ComputerAwakePowerGate {
   private failedReads = 0
   private failedAt = 0
   private rereadQueued = false
+  // Until the first answer arrives a block is not taken, so a launch on battery never spawns one.
+  private settled = false
+  private hasBattery: boolean | null = null
   private pause: ComputerAwakePause | null = null
   private watching = false
   private pollTimer: ReturnType<typeof setTimeout> | null = null
@@ -85,11 +88,47 @@ export class ComputerAwakePowerGate {
     return this.pause
   }
 
+  isAwaitingFirstAnswer(): boolean {
+    return !this.settled
+  }
+
+  /** Null until known; only a reader that polls can tell a missing battery apart. */
+  getHasBattery(): boolean | null {
+    return this.hasBattery
+  }
+
+  /** One read so settings can hide battery options before any block was wanted. */
+  primeBatteryAnswer(): void {
+    if (!this.settled && !this.reading && this.reader.needsPolling) {
+      this.readNow()
+    }
+  }
+
   /** Why a wanted block must be released right now, or null to hold it. */
   evaluate(wanted: boolean): ComputerAwakePause | null {
     this.setWatching(wanted)
+    if (wanted) {
+      this.applySyncAnswer()
+    }
     this.pause = wanted ? this.resolvePause() : null
     return this.pause
+  }
+
+  // A missed on-ac/on-battery event must not keep a block on battery, and the OS answer is cheap.
+  private applySyncAnswer(): void {
+    const onBattery = this.reader.readOnBatteryNow?.()
+    if (onBattery === undefined) {
+      return
+    }
+    this.settled = true
+    if (this.supply?.onBattery === onBattery) {
+      return
+    }
+    const changed = this.supply !== null
+    this.supply = { onBattery, batteryPercent: null }
+    if (changed) {
+      this.markStale()
+    }
   }
 
   dispose(): void {
@@ -172,22 +211,33 @@ export class ComputerAwakePowerGate {
       this.readNow()
       return
     }
+    const firstAnswer = !this.settled
+    this.settled = true
     if (supply === undefined) {
       this.failedReads += 1
       this.failedAt = this.now()
       this.stale = true
       this.scheduleNextRead()
+      if (firstAnswer && this.watching) {
+        this.onChange()
+      }
       return
     }
     this.failedReads = 0
     this.supply = supply
     this.readAt = this.now()
     this.stale = false
+    const hasBattery = this.reader.needsPolling ? supply !== null : null
+    const batteryChanged = hasBattery !== this.hasBattery
+    this.hasBattery = hasBattery
     if (!this.watching) {
+      if (batteryChanged) {
+        this.onChange()
+      }
       return
     }
     this.scheduleNextRead()
-    if (this.resolvePause() !== this.pause) {
+    if (firstAnswer || batteryChanged || this.resolvePause() !== this.pause) {
       this.onChange()
     }
   }
