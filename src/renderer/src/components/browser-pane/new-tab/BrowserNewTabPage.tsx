@@ -22,6 +22,8 @@ import { BrowserImportHintButton } from '../assemble-chrome/profile-routing/Brow
 import { resolveWorktreeDisplayName } from '@/lib/workspace/display/worktree-default-display-name'
 import { useWorktreeRuntimeTarget } from '@/runtime/rpc/targets/use-worktree-runtime-target'
 import type { RuntimeClientTarget } from '../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
+import { isPortDetectionEnabled } from '../../../../../shared/workspace/ports/port-detection-settings'
+import { TurnOnPortDetectionButton } from '../../ports/TurnOnPortDetectionButton'
 
 const SUGGESTED_TILE_LIMIT = 8
 const NO_LINKED_ITEMS: WorkspaceLinkedItemRow[] = []
@@ -114,6 +116,7 @@ function BrowserNewTabPageLayout({
   const browserUrlHistory = useAppStore((s) => s.browserUrlHistory)
   const removeBrowserHistoryEntry = useAppStore((s) => s.removeBrowserHistoryEntry)
   const restoreBrowserHistory = useAppStore((s) => s.restoreBrowserHistory)
+  const portDetectionEnabled = useAppStore((s) => isPortDetectionEnabled(s.settings))
   const suggested = useMemo(
     () =>
       rankBrowserTopSites({
@@ -165,11 +168,17 @@ function BrowserNewTabPageLayout({
             {t('auto.components.browser.pane.BrowserPane.366bf5d62c', 'New Tab')}
           </p>
           <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            {t(
-              'browser.newTab.emptyHint',
-              'Search or enter an address above. Sites you visit, dev servers running in this workspace, and its PR and issue will show up here.'
-            )}
+            {portDetectionEnabled
+              ? t(
+                  'browser.newTab.emptyHint',
+                  'Search or enter an address above. Sites you visit, dev servers running in this workspace, and its PR and issue will show up here.'
+                )
+              : t(
+                  'browser.newTab.emptyHintPortDetectionOff',
+                  "Search or enter an address above. Sites you visit and this workspace's PR and issue will show up here. Port detection is off, so dev servers won't."
+                )}
           </p>
+          {portDetectionEnabled ? null : <TurnOnPortDetectionButton className="mt-1" />}
         </div>
         {importRow}
       </BrowserNewTabScroller>
