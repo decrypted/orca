@@ -45,7 +45,7 @@ type AgentAwakeServiceOptions = {
   onTimerExpired?: (resumeMode: ComputerAwakeMode) => void
   platform?: NodeJS.Platform
   powerMonitor?: PowerMonitorEventSource | null
-  readPowerSupply?: PowerSupplyReader
+  powerSupplyReader?: PowerSupplyReader
 }
 
 export class AgentAwakeService {
@@ -97,10 +97,11 @@ export class AgentAwakeService {
     this.platform = options.platform ?? process.platform
     const resumeSource = options.powerMonitor === undefined ? powerMonitor : options.powerMonitor
     this.powerGate = new ComputerAwakePowerGate(
-      options.readPowerSupply ?? createPowerSupplyReader(this.platform),
+      options.powerSupplyReader ?? createPowerSupplyReader(this.platform),
       () => this.refresh('power-supply-change'),
       this.logger,
-      resumeSource
+      resumeSource,
+      this.now
     )
     if (resumeSource) {
       const onResume = () => {
@@ -135,7 +136,15 @@ export class AgentAwakeService {
   }
 
   setPowerPolicy(policy: ComputerAwakePowerPolicy): void {
-    if (policy.lidCloseSleeps !== this.powerGate.getPolicy().lidCloseSleeps) {
+    const current = this.powerGate.getPolicy()
+    if (
+      policy.onlyWhilePluggedIn === current.onlyWhilePluggedIn &&
+      policy.batteryFloorPercent === current.batteryFloorPercent &&
+      policy.lidCloseSleeps === current.lidCloseSleeps
+    ) {
+      return
+    }
+    if (policy.lidCloseSleeps !== current.lidCloseSleeps) {
       // A held inhibitor keeps the lock it was spawned with; the next start takes the new one.
       this.runAssertion('stop Linux lid sleep assertion', () => this.linuxAssertion.stop('lid'))
     }
@@ -187,7 +196,9 @@ export class AgentAwakeService {
     if (!this.statusLease.renew(status)) {
       return
     }
-    if (this.mode === 'auto' && this.lastPublishedStatus?.active !== true) {
+    const last = this.lastPublishedStatus
+    // A paused block stays released whatever the agents do, so only an idle Agent mode reacts.
+    if (this.mode === 'auto' && last?.active !== true && !last?.paused) {
       this.applyAwakeDecision('status-freshness', 1)
     }
   }
