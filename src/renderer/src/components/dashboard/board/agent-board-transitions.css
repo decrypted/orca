@@ -39,3 +39,10 @@
     animation: none !important;
   }
 }
+
+/* The Reduce motion setting; this file is imported outside main.css, which owns motion-reduce. */
+:root[data-reduce-motion]::view-transition-group(*),
+:root[data-reduce-motion]::view-transition-old(*),
+:root[data-reduce-motion]::view-transition-new(*) {
+  animation: none !important;
+}
