@@ -1,0 +1,428 @@
+name: Fork build
+
+run-name: Fork build ${{ github.ref_name }}
+
+# decrypted/orca only: unsigned Linux deb + macOS arm64 dmg/zip of local/build. Every push keeps them
+# as run artifacts; a vX.Y.Z-fork.N tag also publishes them as a GitHub pre-release (never "latest").
+on:
+  push:
+    branches: [local/build]
+    tags: ['v*-fork.*']
+  workflow_dispatch:
+    inputs:
+      donor_version:
+        description: Official release X.Y.Z whose deb supplies the orcad targets this run cannot build (default latest)
+        required: false
+        default: ''
+        type: string
+      orcad_template:
+        description: 'orcad template source: auto (graft when the donor fits, else full), graft or full'
+        required: false
+        default: auto
+        type: choice
+        options: [auto, graft, full]
+      mac_runner:
+        description: Runner for the macOS arm64 jobs (default repo variable ORCA_FORK_MAC_RUNNER, else macos-15-intel)
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+env:
+  ORCA_BACKGROUND_LAUNCH: '1'
+  NODE_OPTIONS: --max-old-space-size=4096
+  ORCA_DIAGNOSTICS_TOKEN_URL: https://orca.dev/diagnostics/token
+
+jobs:
+  version:
+    if: github.repository == 'decrypted/orca'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      release: ${{ steps.resolve.outputs.release }}
+      donor_version: ${{ steps.resolve.outputs.donor_version }}
+      donor_sha256: ${{ steps.resolve.outputs.donor_sha256 }}
+      upstream_latest: ${{ steps.resolve.outputs.upstream_latest }}
+      orcad_template: ${{ steps.template.outputs.source }}
+      mac_runner: ${{ steps.resolve.outputs.mac_runner }}
+    steps:
+      - name: Resolve the version and the orcad donor release
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          RUN_NUMBER: ${{ github.run_number }}
+          DONOR_OVERRIDE: ${{ inputs.donor_version || vars.ORCA_FORK_DONOR_VERSION }}
+          # Hosted Apple Silicon runners often queue for an hour ("capacity constraints"); Intel ones start at
+          # once and cross-build arm64. macos-15 builds natively.
+          MAC_RUNNER: ${{ inputs.mac_runner || vars.ORCA_FORK_MAC_RUNNER || 'macos-15-intel' }}
+        run: |
+          set -euo pipefail
+          [[ "$MAC_RUNNER" =~ ^macos-[0-9a-z.-]+$ ]] || { echo "::error::mac runner '$MAC_RUNNER' is not a macos-* label"; exit 1; }
+          latest="$(gh api repos/stablyai/orca/releases/latest --jq .tag_name)"
+          [[ "$latest" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "::error::Unexpected latest upstream release '$latest'"; exit 1; }
+          base="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
+          if [ "$REF_TYPE" = tag ]; then
+            [[ "$REF_NAME" =~ ^v([0-9]+\.[0-9]+\.[0-9]+-fork\.[0-9]+)$ ]] || { echo "::error::Tag '$REF_NAME' is not vX.Y.Z-fork.N"; exit 1; }
+            version="${BASH_REMATCH[1]}"
+            status="$(gh api "repos/$GITHUB_REPOSITORY/compare/local/build...$SHA" --jq .status)"
+            case "$status" in
+              identical|behind) ;;
+              *) echo "::error::$REF_NAME ($SHA) is not on local/build (compare: $status)"; exit 1 ;;
+            esac
+            if [ "$(printf '%s\n' "${version%%-*}" "${latest#v}" | sort -V | tail -1)" = "${latest#v}" ]; then
+              echo "::warning::$version sorts below the official ${latest}, which the updater will offer"
+            fi
+            release=true
+          else
+            # Push builds sort after the last fork tag of this base and before the next one.
+            last="$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/v$base-fork." \
+              --jq ".[].ref | ltrimstr(\"refs/tags/v$base-fork.\")" | { grep -E '^[0-9]+$' || true; } | sort -n | tail -1)"
+            version="$base-fork.${last:-0}.dev.$RUN_NUMBER"
+            release=false
+          fi
+          donor="${DONOR_OVERRIDE:-${latest#v}}"
+          [[ "$donor" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Donor version '$donor' is not X.Y.Z"; exit 1; }
+          digest="$(gh api "repos/stablyai/orca/releases/tags/v$donor" --jq ".assets[] | select(.name == \"orca-ide_${donor}_amd64.deb\") | .digest")"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::No sha256 digest for orca-ide_${donor}_amd64.deb"; exit 1; }
+          {
+            echo "version=$version"
+            echo "release=$release"
+            echo "donor_version=$donor"
+            echo "donor_sha256=${digest#sha256:}"
+            echo "upstream_latest=$latest"
+            echo "mac_runner=$MAC_RUNNER"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### Fork build $version"
+            echo "- commit \`$SHA\`, release: $release"
+            echo "- latest official release: $latest"
+            echo "- macOS runner: $MAC_RUNNER"
+            echo "- orcad donor: v$donor (\`${digest#sha256:}\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: package.json
+          package-manager-cache: false
+
+      # Upstream main can change a slot's files or pins before the next release ships them (e.g. #42760
+      # added bin/orca-provider-exec); then every slot has to be built here (fork-orcad-template.yml).
+      - name: Choose the orcad template source
+        id: template
+        env:
+          MODE: ${{ inputs.orcad_template || vars.ORCA_FORK_ORCAD_TEMPLATE || 'auto' }}
+          DONOR_VERSION: ${{ steps.resolve.outputs.donor_version }}
+          DONOR_SHA256: ${{ steps.resolve.outputs.donor_sha256 }}
+        run: |
+          set -euo pipefail
+          case "$MODE" in
+            graft|full) source="$MODE" ;;
+            auto)
+              donor="$(bash .github/fork-build/extract-orcad-donor.sh "$DONOR_VERSION" "$DONOR_SHA256" "$RUNNER_TEMP/orcad-donor")"
+              status=0
+              node .github/fork-build/graft-orcad-template-targets.mjs --check "$donor" linux-x64-glibc,darwin-arm64 || status=$?
+              case "$status" in
+                0) source=graft ;;
+                3) source=full; echo "::notice::Official v$DONOR_VERSION does not fit this source; building every orcad slot (fork-orcad-template.yml)" ;;
+                *) exit "$status" ;;
+              esac
+              ;;
+            *) echo "::error::Unknown orcad template mode '$MODE'"; exit 1 ;;
+          esac
+          echo "source=$source" >> "$GITHUB_OUTPUT"
+          echo "- orcad template: $source (mode $MODE)" >> "$GITHUB_STEP_SUMMARY"
+
+  orcad-template:
+    needs: version
+    if: needs.version.outputs.orcad_template == 'full'
+    uses: ./.github/workflows/fork-orcad-template.yml
+    with:
+      mac_runner: ${{ needs.version.outputs.mac_runner }}
+
+  build:
+    name: ${{ matrix.platform }}
+    needs: [version, orcad-template]
+    if: >-
+      !cancelled() && needs.version.result == 'success' &&
+      (needs.orcad-template.result == 'success' || needs.orcad-template.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ubuntu-latest's 26.04 image defaults GCC to x86-64-v3 and ships AVX in node-pty (#41637); release-cut pins 24.04.
+          - os: ubuntu-24.04
+            platform: linux-x64
+            orcad_slot: linux-x64-glibc
+            eb_cache_path: |
+              ~/.cache/electron
+              ~/.cache/electron-builder
+            artifacts: |
+              dist/orca-ide_*_amd64.deb
+              dist/orca-ide_*_amd64.deb.sha256
+          - os: ${{ needs.version.outputs.mac_runner }}
+            platform: macos-arm64
+            orcad_slot: darwin-arm64
+            eb_cache_path: |
+              ~/Library/Caches/electron
+              ~/Library/Caches/electron-builder
+            artifacts: |
+              dist/orca-macos-arm64.dmg
+              dist/orca-macos-arm64.dmg.sha256
+              dist/orca-macos-arm64.zip
+              dist/orca-macos-arm64.zip.sha256
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      DONOR_VERSION: ${{ needs.version.outputs.donor_version }}
+      DONOR_SHA256: ${{ needs.version.outputs.donor_sha256 }}
+      ORCAD_SLOT: ${{ matrix.orcad_slot }}
+      ORCAD_TEMPLATE_SOURCE: ${{ needs.version.outputs.orcad_template }}
+      # beforePack and afterPack fail the package when the template is absent.
+      ORCA_REQUIRE_ORCAD_TEMPLATE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2
+        with:
+          install: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      # pnpm's bundled node-gyp is not executable on Linux (upstream run 25081763129).
+      - name: Use external node-gyp
+        if: runner.os == 'Linux'
+        run: |
+          npm install -g node-gyp@11.5.0
+          echo "npm_config_node_gyp=$(npm root -g)/node-gyp/bin/node-gyp.js" >> "$GITHUB_ENV"
+
+      - name: Locate the pinned Node runtime cache
+        if: runner.os == 'macOS'
+        run: echo "ORCA_NODE_RUNTIME_CACHE_DIR=$HOME/Library/Caches/orca-node-runtime" >> "$GITHUB_ENV"
+
+      - name: Cache the pinned Node runtime
+        if: runner.os == 'macOS'
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ~/Library/Caches/orca-node-runtime
+          key: orca-node-runtime-mac-${{ hashFiles('src/shared/node-runtime/node-runtime-pin.ts') }}
+
+      - name: Stamp the version (not committed)
+        run: npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Resolve electron-builder download versions
+        id: eb-versions
+        run: node -p "const d = require('./package.json').devDependencies; 'versions=electron' + d.electron + '-builder' + d['electron-builder']" >> "$GITHUB_OUTPUT"
+
+      - name: Cache electron-builder downloads
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ matrix.eb_cache_path }}
+          key: fork-electron-builder-${{ matrix.platform }}-${{ steps.eb-versions.outputs.versions }}
+          restore-keys: |
+            fork-electron-builder-${{ matrix.platform }}-
+
+      # Electron's CDN sometimes answers 504 during postinstall. macOS takes both arches' optional
+      # natives like release-mac-build, so an Intel runner can package arm64.
+      - name: Install dependencies
+        run: |
+          cpu=()
+          [ "$RUNNER_OS" != macOS ] || cpu=("--cpu=current,x64,arm64")
+          for attempt in 1 2 3; do
+            pnpm install --frozen-lockfile "${cpu[@]}" && exit 0
+            echo "::warning::pnpm install attempt $attempt failed"
+            sleep 30
+          done
+          exit 1
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Install Linux computer-use provider dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool
+
+      # plutil accepts duplicate keys that codesign rejects.
+      - name: Verify macOS entitlements
+        if: runner.os == 'macOS'
+        run: pnpm verify:macos-entitlements
+
+      - name: Build app
+        run: pnpm run build:release
+
+      - name: Build this runner's orcad slot and template target
+        if: env.ORCAD_TEMPLATE_SOURCE == 'graft'
+        run: |
+          bash .github/fork-build/build-orcad-slot.sh "$ORCAD_SLOT"
+          pnpm run build:orcad-template --targets "$ORCAD_SLOT"
+
+      - name: Graft the other orcad targets from the official donor release
+        if: env.ORCAD_TEMPLATE_SOURCE == 'graft'
+        run: |
+          donor="$(bash .github/fork-build/extract-orcad-donor.sh "$DONOR_VERSION" "$DONOR_SHA256" "$RUNNER_TEMP/orcad-donor")"
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON .github/fork-build/graft-orcad-template-targets.mjs "$donor"
+          rm -rf "$RUNNER_TEMP/orcad-donor"
+          du -sh out/orcad-template out/orcad-template/targets/*
+
+      # After the app build so nothing that cleans out/ can drop it.
+      - name: Download the full orcad template
+        if: env.ORCAD_TEMPLATE_SOURCE == 'full'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: orcad-template
+          path: out/orcad-template
+
+      # #8212: Node and the exact Electron runtime must survive a native SIGSEGV in the watcher.
+      - name: Gate runtime file-watcher process isolation
+        run: |
+          node config/scripts/diagnostics/runtime-watchers/runtime-file-watcher-fault-harness.mjs
+          ELECTRON_RUN_AS_NODE=1 pnpm exec electron config/scripts/diagnostics/runtime-watchers/runtime-file-watcher-fault-harness.mjs
+
+      - name: Package the deb
+        if: runner.os == 'Linux'
+        run: |
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder --config config/electron-builder.config.cjs --linux deb --x64 --publish never
+
+      # No ORCA_MAC_RELEASE: no hardened runtime, no notarization. Identity '-' signs ad-hoc, which
+      # Apple Silicon needs to launch the modified bundle at all. On an Intel runner the arm64 terminal
+      # host cannot boot; afterPack requires that boot only when CI=true, so the cross build turns it off.
+      - name: Package the dmg and zip
+        if: runner.os == 'macOS'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CI: ${{ runner.arch == 'X64' && 'false' || 'true' }}
+        run: |
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON config/scripts/orcad-distribution/prebuilds/pinned-node-downloads.mjs darwin-arm64 darwin-x64
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder --config config/electron-builder.config.cjs --mac dmg zip --arm64 --publish never -c.mac.identity=-
+
+      - name: Load packaged node-pty on the Linux floor
+        if: runner.os == 'Linux'
+        run: node config/scripts/desktop-distribution/runtime-verification/run-linux-packaged-node-pty-floor-smoke.mjs --app-dir dist/linux-unpacked
+
+      - name: Check the deb
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          name="orca-ide_${VERSION}_amd64.deb"
+          dpkg-deb -I "dist/$name"
+          [ "$(dpkg-deb -f "dist/$name" Package)" = orca-ide ] || { echo "::error::Unexpected package name"; exit 1; }
+          expected="${VERSION%%-*}~${VERSION#*-}"
+          actual="$(dpkg-deb -f "dist/$name" Version)"
+          [ "$actual" = "$expected" ] || { echo "::error::deb version $actual, expected $expected"; exit 1; }
+          cd dist && sha256sum "$name" | tee "$name.sha256"
+
+      - name: Check the macOS app
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          app=dist/mac-arm64/Orca.app
+          file "$app/Contents/MacOS/Orca"
+          [ "$(lipo -archs "$app/Contents/MacOS/Orca")" = arm64 ]
+          bash .github/fork-build/check-macho-arch.sh "$app" arm64
+          [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$VERSION" ]
+          codesign --verify --deep --strict "$app"
+          codesign -dv --verbose=2 "$app" 2>&1 | tee "$RUNNER_TEMP/codesign.txt"
+          grep -q '^Signature=adhoc' "$RUNNER_TEMP/codesign.txt" || { echo "::error::Expected an ad-hoc signature"; exit 1; }
+          spctl -a -vv "$app" 2>&1 || echo "Gatekeeper rejects it, as expected for an unnotarized app"
+          cd dist
+          for f in orca-macos-arm64.dmg orca-macos-arm64.zip; do shasum -a 256 "$f" | tee "$f.sha256"; done
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: orca-${{ matrix.platform }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  release:
+    needs: [version, build]
+    if: ${{ !cancelled() && needs.version.outputs.release == 'true' && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: orca-*
+          path: dist
+          merge-multiple: true
+
+      - name: Verify the packages and write SHA256SUMS
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          for sum in *.sha256; do sha256sum -c "$sum"; done
+          rm -f ./*.sha256
+          sha256sum orca-* | tee SHA256SUMS
+          [ "$(wc -l < SHA256SUMS)" -eq 3 ] || { echo "::error::Expected deb, dmg and zip"; exit 1; }
+
+      # No checkout: this job holds contents: write and runs no repository code.
+      - name: Publish the pre-release
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
+          SHA: ${{ github.sha }}
+          DONOR_VERSION: ${{ needs.version.outputs.donor_version }}
+          UPSTREAM_LATEST: ${{ needs.version.outputs.upstream_latest }}
+          ORCAD_TEMPLATE_SOURCE: ${{ needs.version.outputs.orcad_template }}
+        run: |
+          set -euo pipefail
+          read -r type object < <(gh api "repos/$GH_REPO/git/ref/tags/$TAG" --jq '.object.type + " " + .object.sha')
+          message=''
+          if [ "$type" = tag ]; then
+            message="$(gh api "repos/$GH_REPO/git/tags/$object" --jq .message | sed '/^-----BEGIN PGP SIGNATURE-----/,$d')"
+          fi
+          {
+            printf '%s\n\n' "${message:-Fork build of local/build.}"
+            echo '---'
+            echo "Commit \`$SHA\` of \`local/build\` (latest official release at build time: $UPSTREAM_LATEST)."
+            if [ "$ORCAD_TEMPLATE_SOURCE" = graft ]; then
+              echo "orcad remote-server targets other than linux-x64-glibc / darwin-arm64 come from the official v$DONOR_VERSION release."
+            else
+              echo 'orcad remote-server targets: all built from this commit (fork-orcad-template.yml).'
+            fi
+            cat <<'EOF'
+
+          Unsigned builds: macOS is ad-hoc signed and not notarized, so Gatekeeper blocks the first launch
+          (`xattr -dr com.apple.quarantine /Applications/Orca.app`). Check downloads with `sha256sum -c SHA256SUMS`.
+          EOF
+          } > "$RUNNER_TEMP/notes.md"
+          files=(orca-* SHA256SUMS)
+          if draft="$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)"; then
+            [ "$draft" = true ] || { echo "::error::Release $TAG is already published; tag the next N instead"; exit 1; }
+            gh release upload "$TAG" "${files[@]}" --clobber
+            gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
+          else
+            gh release create "$TAG" "${files[@]}" --verify-tag --draft --prerelease --latest=false \
+              --title "Orca $VERSION (fork)" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+          gh release edit "$TAG" --draft=false --prerelease --latest=false
