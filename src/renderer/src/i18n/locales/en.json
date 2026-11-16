@@ -12735,8 +12735,8 @@
           "lidNoteMac": "Prevents idle sleep with the lid open; closing the lid still puts this Mac to sleep.",
           "lidNoteDefault": "Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "timerUntil": "Until {{time}}",
-          "modeDescriptionLidSleeps": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Closing the lid still puts this device to sleep.",
-          "lidNoteLidSleeps": "Closing the lid still puts this device to sleep."
+          "modeDescriptionLidSleeps": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Closing the lid still puts this device to sleep, unless logind is set to honor sleep locks (LidSwitchIgnoreInhibited=no).",
+          "lidNoteLidSleeps": "Closing the lid still puts this device to sleep, unless logind is set to honor sleep locks (LidSwitchIgnoreInhibited=no)."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agent status hooks",
@@ -15000,9 +15000,10 @@
           "onlyWhilePluggedIn": "Only while plugged in",
           "onlyWhilePluggedInDescription": "On battery power the computer sleeps normally; keeping awake resumes when it is plugged in again.",
           "floorLabel": "On battery, pause below",
-          "floorDescription": "Below this charge the computer sleeps normally; keeping awake resumes when it is plugged in or charged {{margin}} points above it.",
+          "floorDescription": "Below this charge the computer sleeps normally until it is plugged in again.",
           "lidLabel": "Closing the lid puts the computer to sleep",
-          "lidDescription": "Off asks this device to stay awake with the lid closed, subject to its power policy."
+          "lidDescription": "Off asks this device to stay awake with the lid closed, subject to its power policy.",
+          "windowsNoFloor": "Windows gives Orca no charge level, so on battery the computer stays awake with no charge limit."
         }
       },
       "right": {

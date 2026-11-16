@@ -11692,8 +11692,8 @@
           "lidNoteWindows": "뚜껑 닫기 동작은 이 장치의 전원 설정을 따릅니다.",
           "lidNoteDefault": "Orca는 또한 전원 정책에 따라 뚜껑을 닫을 때 이 장치를 깨어 있도록 요청합니다.",
           "timerUntil": "{{time}}까지",
-          "modeDescriptionLidSleeps": "켜짐, 에이전트, 꺼짐 중에서 선택하세요. 에이전트 모드는 에이전트가 작업하는 동안 절전 모드를 방지합니다. 덮개를 닫으면 이 기기는 절전 모드로 전환됩니다.",
-          "lidNoteLidSleeps": "덮개를 닫으면 이 기기는 절전 모드로 전환됩니다."
+          "modeDescriptionLidSleeps": "켜짐, 에이전트, 꺼짐 중에서 선택하세요. 에이전트 모드는 에이전트가 작업하는 동안 절전 모드를 방지합니다. logind가 절전 잠금을 따르도록 설정되지 않은 한 (LidSwitchIgnoreInhibited=no) 덮개를 닫으면 이 기기는 절전 모드로 전환됩니다.",
+          "lidNoteLidSleeps": "logind가 절전 잠금을 따르도록 설정되지 않은 한 (LidSwitchIgnoreInhibited=no) 덮개를 닫으면 이 기기는 절전 모드로 전환됩니다."
         },
         "AgentAwakeSetting": {
           "on": "켜짐",
@@ -14020,9 +14020,10 @@
           "onlyWhilePluggedIn": "전원 연결 시에만",
           "onlyWhilePluggedInDescription": "배터리 전원에서는 평소처럼 절전 모드로 전환되며, 다시 전원에 연결하면 절전 방지가 재개됩니다.",
           "floorLabel": "배터리 사용 시 일시 중지 기준",
-          "floorDescription": "이 충전량 아래에서는 평소처럼 절전 모드로 전환되며, 전원에 연결하거나 {{margin}}포인트 더 충전되면 절전 방지가 재개됩니다.",
+          "floorDescription": "이 충전량 아래에서는 다시 전원에 연결할 때까지 평소처럼 절전 모드로 전환됩니다.",
           "lidLabel": "덮개를 닫으면 컴퓨터를 절전 모드로 전환",
-          "lidDescription": "끄면 전원 정책이 허용하는 범위에서 덮개를 닫아도 깨어 있도록 이 기기에 요청합니다."
+          "lidDescription": "끄면 전원 정책이 허용하는 범위에서 덮개를 닫아도 깨어 있도록 이 기기에 요청합니다.",
+          "windowsNoFloor": "Windows는 Orca에 충전량을 제공하지 않으므로 배터리 사용 시 충전량 제한 없이 절전 모드가 방지됩니다."
         }
       },
       "right": {
