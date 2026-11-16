@@ -17,6 +17,8 @@ import {
 import { useTranslate } from '@/i18n/use-translate'
 import { isStatusBarItemAvailable } from './status-bar-agent-gating'
 import type { StatusBarController } from './use-status-bar-controller'
+import { useAppStore } from '../../../store/index'
+import { isPortDetectionEnabled } from '../../../../../shared/workspace/ports/port-detection-settings'
 
 export function StatusBarVisibilityMenu({
   controller
@@ -33,6 +35,7 @@ export function StatusBarVisibilityMenu({
     statusBarItems,
     toggleStatusBarItem
   } = controller
+  const portDetectionEnabled = useAppStore((s) => isPortDetectionEnabled(s.settings))
 
   return (
     <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
@@ -191,16 +194,18 @@ export function StatusBarVisibilityMenu({
           <Activity className="size-3.5" />
           {t('auto.components.status.bar.StatusBar.d1e1a7a6bf', 'Resource Manager')}
         </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={statusBarItems.includes('ports')}
-          onCheckedChange={() => {
-            recordFeatureInteraction('ports')
-            toggleStatusBarItem('ports')
-          }}
-        >
-          <Plug className="size-3.5" />
-          {t('auto.components.status.bar.StatusBar.9659e38343', 'Ports')}
-        </DropdownMenuCheckboxItem>
+        {portDetectionEnabled && (
+          <DropdownMenuCheckboxItem
+            checked={statusBarItems.includes('ports')}
+            onCheckedChange={() => {
+              recordFeatureInteraction('ports')
+              toggleStatusBarItem('ports')
+            }}
+          >
+            <Plug className="size-3.5" />
+            {t('auto.components.status.bar.StatusBar.9659e38343', 'Ports')}
+          </DropdownMenuCheckboxItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

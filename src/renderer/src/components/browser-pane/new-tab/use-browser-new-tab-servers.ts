@@ -9,6 +9,7 @@ import type {
   WorkspacePort,
   WorkspacePortPageProbeResult
 } from '../../../../../shared/workspace/ports/workspace-ports'
+import { isPortDetectionEnabled } from '../../../../../shared/workspace/ports/port-detection-settings'
 
 export type BrowserNewTabServer = {
   port: WorkspacePort
@@ -75,12 +76,15 @@ export function useBrowserNewTabServers(
     [hostScan]
   )
   const replaceWorkspacePortScans = useAppStore((s) => s.replaceWorkspacePortScans)
+  const portDetectionEnabled = useAppStore(
+    (s) => s.settings !== null && isPortDetectionEnabled(s.settings)
+  )
   const [probes, setProbes] = useState<ReadonlyMap<string, WorkspacePortPageProbeResult | null>>(
     () => new Map()
   )
 
   useEffect(() => {
-    if (!runtimeTarget) {
+    if (!runtimeTarget || !portDetectionEnabled) {
       return
     }
     // Why: the background poll runs every 30s; a server started moments ago should be here now.
@@ -89,7 +93,7 @@ export function useBrowserNewTabServers(
       replaceWorkspacePortScans,
       getWorkspacePortScansByKey: () => useAppStore.getState().workspacePortScansByKey
     })
-  }, [runtimeTarget, replaceWorkspacePortScans])
+  }, [runtimeTarget, replaceWorkspacePortScans, portDetectionEnabled])
 
   useEffect(() => {
     if (!runtimeTarget) {
