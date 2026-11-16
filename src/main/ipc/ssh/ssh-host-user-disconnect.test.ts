@@ -34,7 +34,8 @@ vi.mock(
 vi.mock('../runtime-environments/runtime-environments', () => ({
   invalidateRuntimeEnvironmentTransport: runtime.invalidate
 }))
-import type { SshTarget } from '../../../shared/remote-runtime/ssh/ssh-types'
+import type { SshConnectionStatus, SshTarget } from '../../../shared/remote-runtime/ssh/ssh-types'
+import { handleSshConnectionStateChange } from './ssh-connection-state-callbacks'
 import { clearRuntimeEnvironmentManualDisconnect } from '../runtime-environments/connectivity/runtime-environment-manual-disconnect'
 import { isSshUserDisconnected } from '../../ssh/connection/ssh-user-disconnect'
 import { createSshIpcHarness } from './ssh-ipc-test-harness'
@@ -124,5 +125,58 @@ describe('a host whose managed server the user stopped and removed', () => {
     await stopping
 
     await expect(reconnect).rejects.toThrow('Server was disconnected. Connect to use it again.')
+  })
+})
+
+describe('a host whose session ends while automatic connects are off', () => {
+  const harness = createSshIpcHarness(mocks)
+  const { handlers } = harness
+  const otherHost: SshTarget = { ...target, id: 'ssh-2', label: 'Other' }
+  type SettingsListener = (updates: object, settings: object) => void
+  let settingsChanged: SettingsListener | undefined
+
+  beforeEach(async () => {
+    Object.assign(harness.mockStore, {
+      getSettings: () => ({ remoteHostAutoConnectEnabled: false }),
+      onSettingsChanged: (listener: SettingsListener) => {
+        settingsChanged = listener
+        return () => {}
+      }
+    })
+    await harness.reset()
+    runtime.environments = [managedServer]
+    runtime.getStatusOwner.mockReset().mockReturnValue({ activate: runtime.activate })
+    runtime.activate.mockReset()
+    runtime.invalidate.mockReset()
+    mockSshStore.getTarget.mockImplementation((id: string) =>
+      [target, otherHost].find((host) => host.id === id)
+    )
+    mockConnectionManager.disconnect.mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    clearRuntimeEnvironmentManualDisconnect(managedServer.id)
+  })
+
+  function endSession(targetId: string, status: SshConnectionStatus): void {
+    handleSshConnectionStateChange(targetId, { targetId, status, error: null, reconnectAttempt: 0 })
+  }
+
+  it('is held again, servers included, once its redial ladder gives up', async () => {
+    endSession(target.id, 'reconnection-failed')
+
+    expect(isSshUserDisconnected(target.id)).toBe(true)
+    await vi.waitFor(() => expect(runtime.invalidate).toHaveBeenCalledWith(managedServer.id))
+  })
+
+  it('keeps a Disconnect by the user when automatic connects turn back on', async () => {
+    endSession(otherHost.id, 'error')
+    await handlers.get('ssh:disconnect')!(null, { targetId: target.id })
+    endSession(target.id, 'disconnected')
+
+    settingsChanged!({ remoteHostAutoConnectEnabled: true }, { remoteHostAutoConnectEnabled: true })
+
+    await vi.waitFor(() => expect(isSshUserDisconnected(otherHost.id)).toBe(false))
+    expect(isSshUserDisconnected(target.id)).toBe(true)
   })
 })
