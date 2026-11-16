@@ -7,7 +7,8 @@ import type { PowerSupplyState } from '../../shared/app-lifecycle/computer-awake
 export type PowerSupplyReader = {
   /** Linux reports no AC/battery events, so only there must a reader be polled to see unplugging. */
   needsPolling: boolean
-  /** Resolves null when no system battery is found; the charge level is read only on request. */
+  /** Resolves null only when no system battery was positively found and rejects when the
+   *  answer is unknown; the charge level is read only on request. */
   read: (needLevel: boolean) => Promise<PowerSupplyState | null>
   /** Drops cached device knowledge, e.g. after resume when docks may have changed. */
   invalidate?: () => void
@@ -38,14 +39,21 @@ export function createLinuxPowerSupplyReader(root: string): PowerSupplyReader {
   // Supply types never change, so each name is classified once instead of on every read.
   const kinds = new Map<string, SupplyKind>()
 
-  const readValue = async (name: string, key: string): Promise<string | null> => {
+  // Rejects so a vanished or unreadable supply makes the whole answer unknown, never "no battery".
+  const readValue = async (name: string, key: string): Promise<string> => {
     try {
       return (await readFile(join(root, name, key), 'utf8')).trim()
-    } catch {
+    } catch (error) {
       kinds.delete(name)
-      return null
+      throw error
     }
   }
+
+  const readOptionalValue = (name: string, key: string): Promise<string | null> =>
+    readFile(join(root, name, key), 'utf8').then(
+      (value) => value.trim(),
+      () => null
+    )
 
   const classify = async (name: string): Promise<SupplyKind> => {
     const type = await readValue(name, 'type')
@@ -53,14 +61,14 @@ export function createLinuxPowerSupplyReader(root: string): PowerSupplyReader {
       return 'external'
     }
     // Mice and headsets report scope "Device"; only the system battery powers the machine.
-    if (type === 'Battery' && (await readValue(name, 'scope')) !== 'Device') {
+    if (type === 'Battery' && (await readOptionalValue(name, 'scope')) !== 'Device') {
       return 'battery'
     }
     return 'other'
   }
 
-  const readAll = async (names: string[], key: string): Promise<(string | null)[]> => {
-    const values: (string | null)[] = []
+  const readAll = async (names: string[], key: string): Promise<string[]> => {
+    const values: string[] = []
     for (const name of names) {
       values.push(await readValue(name, key))
     }
@@ -74,8 +82,12 @@ export function createLinuxPowerSupplyReader(root: string): PowerSupplyReader {
       let names: string[]
       try {
         names = await readdir(root)
-      } catch {
-        return null
+      } catch (error) {
+        // No power_supply class at all (VMs, containers) is a positive "no battery".
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return null
+        }
+        throw error
       }
       for (const name of kinds.keys()) {
         if (!names.includes(name)) {
