@@ -36,7 +36,8 @@
 /* Set by use-reduce-visual-effects for the setting or OS reduced transparency. */
 @custom-variant reduce-effects (&:where(:root[data-reduce-effects] *));
 /* Reduce motion "Always" sets data-reduce-motion; a prefix, since a suffix would follow ::before.
-   @variant drops ::before from a selector list (nesting wraps it in :is()), so give it its own rule. */
+   Put pseudo-elements inside @variant (`.x { @variant motion-reduce { &::before {} } }`): nesting
+   cannot match `&` to a pseudo-element parent. Tailwind drops not-motion-reduce: for this variant. */
 @custom-variant motion-reduce {
   @media (prefers-reduced-motion: reduce) {
     @slot;
@@ -2380,10 +2381,11 @@ html.native-shell .app-layout {
   --native-chat-quiet-leave-top: calc(-20px * var(--chat-estimated-spacing-scale, 1));
 }
 
-/* Reduce motion "Always" also stills loops that lack motion-reduce:; unlayered, so it beats utilities. */
-:root[data-reduce-motion]
-  :is(.animate-spin, .animate-pulse, .animate-ping, .animate-bounce, .animate-waveform) {
-  animation: none;
+/* Stills loops that lack motion-reduce:; unlayered, so it beats the animate-* utilities. */
+:is(.animate-spin, .animate-pulse, .animate-ping, .animate-bounce, .animate-waveform) {
+  @variant motion-reduce {
+    animation: none;
+  }
 }
 
 /* Why: keyframes run when the content mounts already in its final state. */
@@ -2553,11 +2555,13 @@ html.native-shell .app-layout {
   }
 }
 
-.scroll-to-current-workspace-reveal-highlight::before {
+.scroll-to-current-workspace-reveal-highlight {
   @variant motion-reduce {
-    animation: none;
-    opacity: 1;
-    transform: none;
+    &::before {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
   }
 }
 
@@ -3387,9 +3391,11 @@ html.native-shell .app-layout {
   }
 }
 
-.tab-entry-omnibox::after {
+.tab-entry-omnibox {
   @variant motion-reduce {
-    animation: none !important;
+    &::after {
+      animation: none !important;
+    }
   }
 }
 
@@ -3937,11 +3943,13 @@ body:has([data-contextual-tour-target='tab-create-menu'][data-state='open'])
   }
 }
 
-.orca-contextual-tour-target-rings::before {
+.orca-contextual-tour-target-rings {
   @variant motion-reduce {
-    animation: none;
-    opacity: 0.72;
-    transform: scale(1.28);
+    &::before {
+      animation: none;
+      opacity: 0.72;
+      transform: scale(1.28);
+    }
   }
 }
 
@@ -4472,14 +4480,18 @@ body:has([data-contextual-tour-target='tab-create-menu'][data-state='open'])
   }
 }
 
-.browser-agent-cursor-layer::before {
+.browser-agent-cursor-layer {
   @variant motion-reduce {
-    transition: none;
+    &::before {
+      transition: none;
+    }
   }
 }
 
-.browser-agent-cursor-layer[data-agent-active]::before {
+.browser-agent-cursor-layer[data-agent-active] {
   @variant motion-reduce {
-    animation: none;
+    &::before {
+      animation: none;
+    }
   }
 }

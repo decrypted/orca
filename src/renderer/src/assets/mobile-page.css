@@ -1890,10 +1890,10 @@
   }
 }
 
-:root[data-reduce-motion]
-  .mobile-page-root
-  :is(.mp-network-refresh.is-spinning svg, .mp-wl-spinner, .mp-term-cursor) {
-  animation: none;
+.mobile-page-root :is(.mp-network-refresh.is-spinning svg, .mp-wl-spinner, .mp-term-cursor) {
+  @variant motion-reduce {
+    animation: none;
+  }
 }
 
 @media (max-width: 920px) {
