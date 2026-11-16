@@ -448,6 +448,7 @@
     },
     "newTab": {
       "emptyHint": "Search or enter an address above. Sites you visit, dev servers running in this workspace, and its PR and issue will show up here.",
+      "emptyHintPortDetectionOff": "Search or enter an address above. Sites you visit and this workspace's PR and issue will show up here. Port detection is off, so dev servers won't.",
       "openServerFailed": "Couldn’t open {{address}}",
       "removedFromHistory": "Removed “{{title}}” from history",
       "removeSuggestion": "Remove from history",
@@ -12557,7 +12558,8 @@
         },
         "BrowserLocalhostWorktreeLabelsSetting": {
           "1db3c8b983": "Open workspace ports as worktree-specific Orca localhost URLs so browser tabs are easier to tell apart.",
-          "1af20fbf51": "Localhost worktree labels"
+          "1af20fbf51": "Localhost worktree labels",
+          "needsPortDetection": "Needs port detection, which is off in Advanced."
         },
         "AgentRuntimeSetting": {
           "label": "Agent runtime",
