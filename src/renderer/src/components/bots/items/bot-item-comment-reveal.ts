@@ -1,6 +1,8 @@
 // Brings an Activity comment card into view: centred, so the sticky header never covers it. A quote's
 // jump focuses the card; the comment box's "Replying to" only lights it, so typing stays in the box.
 
+import { readPrefersReducedMotion } from '@/hooks/theme/usePrefersReducedMotion'
+
 /** Marks a card so a jump can find it. */
 export const BOT_ITEM_COMMENT_ATTRIBUTE = 'data-bot-item-comment-id'
 /** A card's highlight: `on`, then `fading` as ring and tint ease out (`data-[flash=…]:` in its classes). */
@@ -43,7 +45,7 @@ export function revealBotItemComment(
   if (!target) {
     return
   }
-  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const still = readPrefersReducedMotion()
   target.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' })
   if (mark === 'focus') {
     target.focus({ preventScroll: true })
