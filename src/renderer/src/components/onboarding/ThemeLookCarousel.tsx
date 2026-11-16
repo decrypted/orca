@@ -4,6 +4,7 @@ import { Check, ChevronLeft, ChevronRight, ExternalLink, Puzzle } from 'lucide-r
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { Button } from '@/components/ui/button'
+import { motionSafeScrollBehavior } from '@/hooks/usePrefersReducedMotion'
 import type { ThemeLook } from './onboarding-theme-looks'
 import { ThemeLookCardPreview } from './ThemeLookPreview'
 
@@ -60,7 +61,7 @@ export function ThemeLookCarousel({
 
   const page = (direction: 1 | -1): void => {
     const el = trackRef.current
-    el?.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' })
+    el?.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: motionSafeScrollBehavior() })
   }
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
