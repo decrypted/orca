@@ -9,6 +9,7 @@ import type { PowerSupplyReader } from './power-supply-reader'
 
 const POWER_SUPPLY_POLL_MS = 60_000
 const MAX_BATTERY_LEVEL_POLL_MS = 10 * 60_000
+const FAILED_READ_RETRY_MS = 5_000
 
 // Overloads, so Electron's per-event powerMonitor signatures are assignable.
 export type PowerSourceEvents = {
@@ -30,6 +31,10 @@ export class ComputerAwakePowerGate {
   // A power event or policy change since the last read means it no longer describes the machine.
   private stale = true
   private reading = false
+  // Unknown is not "no battery": keep the last decision and keep retrying, since Linux has no
+  // AC events and a stopped poll would never notice unplugging.
+  private failedReads = 0
+  private failedAt = 0
   private rereadQueued = false
   private pause: ComputerAwakePause | null = null
   private watching = false
@@ -148,22 +153,33 @@ export class ComputerAwakePowerGate {
     }
     this.reading = true
     this.clearPollTimer()
-    void this.reader
-      .read(!this.policy.onlyWhilePluggedIn)
-      .catch((error: unknown) => {
-        this.logger.warn('[agent-awake] failed to read the power supply', { error })
-        return null
-      })
-      .then((supply) => this.finishRead(supply))
+    void this.reader.read(!this.policy.onlyWhilePluggedIn).then(
+      (supply) => this.finishRead(supply),
+      (error: unknown) => {
+        if (this.failedReads === 0) {
+          this.logger.warn('[agent-awake] failed to read the power supply', { error })
+        }
+        this.finishRead(undefined)
+      }
+    )
   }
 
-  private finishRead(supply: PowerSupplyState | null): void {
+  /** `undefined` is a failed read: the previous supply and decision stand. */
+  private finishRead(supply: PowerSupplyState | null | undefined): void {
     this.reading = false
     if (this.rereadQueued) {
       this.rereadQueued = false
       this.readNow()
       return
     }
+    if (supply === undefined) {
+      this.failedReads += 1
+      this.failedAt = this.now()
+      this.stale = true
+      this.scheduleNextRead()
+      return
+    }
+    this.failedReads = 0
     this.supply = supply
     this.readAt = this.now()
     this.stale = false
@@ -178,8 +194,11 @@ export class ComputerAwakePowerGate {
 
   private scheduleNextRead(): void {
     this.clearPollTimer()
-    const delay = this.pollDelay()
-    if (!this.watching || this.reading || delay === null || this.readAt === null) {
+    if (!this.watching || this.reading) {
+      return
+    }
+    const nextReadAt = this.nextReadAt()
+    if (nextReadAt === null) {
       return
     }
     this.pollTimer = setTimeout(
@@ -187,9 +206,17 @@ export class ComputerAwakePowerGate {
         this.pollTimer = null
         this.readNow()
       },
-      Math.max(0, this.readAt + delay - this.now())
+      Math.max(0, nextReadAt - this.now())
     )
     this.pollTimer.unref?.()
+  }
+
+  private nextReadAt(): number | null {
+    if (this.failedReads > 0) {
+      return this.failedAt + (this.failedReads === 1 ? FAILED_READ_RETRY_MS : POWER_SUPPLY_POLL_MS)
+    }
+    const delay = this.pollDelay()
+    return delay === null || this.readAt === null ? null : this.readAt + delay
   }
 
   private clearPollTimer(): void {
