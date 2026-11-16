@@ -1,5 +1,6 @@
 import type { SettingsSearchEntry } from '../search/settings-search'
 import { getAdvancedNetworkSearchEntries } from './network/advanced-network-search'
+import { getBackgroundActivitySearchEntries } from './background-activity/background-activity-search'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { translate } from '@/i18n/i18n'
 import { translateSearchKeyword } from '../search/settings-search-keywords'
@@ -82,6 +83,7 @@ export const getAdvancedSearchEntry = createLocalizedCatalog(
 )
 
 export const getAdvancedPaneSearchEntries = createLocalizedCatalog((): SettingsSearchEntry[] => [
+  ...getBackgroundActivitySearchEntries(),
   ...getAdvancedNetworkSearchEntries(),
   getAdvancedSearchEntry().http1Compatibility,
   getAdvancedSearchEntry().uninstall

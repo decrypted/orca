@@ -1971,6 +1971,23 @@
       },
       "signInFailed": "Couldn’t sign you in to the console",
       "signInFailedDetail": "Your browser opened it anyway. Sign in there to continue."
+    },
+    "backgroundActivity": {
+      "title": "Background activity",
+      "description": "Checks Orca runs on its own while you work.",
+      "portDetection": {
+        "title": "Detect ports",
+        "description": "Check which ports your workspaces listen on, locally and on remote hosts. When off, Orca runs no port scans and hides the Ports status bar item.",
+        "keywords": {
+          "ports": "ports",
+          "scan": "scan",
+          "localhost": "localhost",
+          "server": "server",
+          "polling": "polling",
+          "background": "background",
+          "remote": "remote"
+        }
+      }
     }
   },
   "menu": {
@@ -15126,7 +15143,9 @@
             "remotePortOutOfRange": "Remote port must be 1–65535",
             "localPortOutOfRange": "Local port must be 1–65535",
             "localPortInUse": "Port {{port}} is already in use. Choose a different local port.",
-            "localPortRequiresPrivileges": "Port {{port}} requires elevated privileges. Use a local port ≥ 1024."
+            "localPortRequiresPrivileges": "Port {{port}} requires elevated privileges. Use a local port ≥ 1024.",
+            "detectionOff": "Port detection is off",
+            "turnOnDetection": "Turn on port detection"
           },
           "Search": {
             "1abfb25a66": "Type to search in files",
