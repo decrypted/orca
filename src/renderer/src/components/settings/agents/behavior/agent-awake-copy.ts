@@ -1,7 +1,14 @@
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
-import type { ComputerAwakeMode } from '../../../../../../shared/app-lifecycle/computer-awake-mode'
+import { uiDateTimeFormat } from '@/i18n/ui-intl-formatters'
+import type {
+  ComputerAwakeMode,
+  ComputerAwakeTimer
+} from '../../../../../../shared/app-lifecycle/computer-awake-mode'
 import { searchKeywords } from '../../search/settings-search-keywords'
+
+// Intl formatter caches key on option identity, so this must be a module constant.
+const TIMER_END_FORMAT: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
 
 const AGENT_AWAKE_TITLE_KEY = 'auto.components.settings.agent-awake-copy.modeTitle'
 const AGENT_AWAKE_DESCRIPTION_WINDOWS_KEY =
@@ -23,6 +30,15 @@ export function getAgentAwakeModeLabel(mode: ComputerAwakeMode, t: Translate = t
     return t('auto.components.settings.AgentAwakeSetting.auto', 'Agent')
   }
   return t('auto.components.settings.AgentAwakeSetting.off', 'Off')
+}
+
+export function getAgentAwakeTimerLabel(
+  timer: ComputerAwakeTimer,
+  t: Translate = translate
+): string {
+  return t('auto.components.settings.agent-awake-copy.timerUntil', 'Until {{time}}', {
+    time: uiDateTimeFormat(TIMER_END_FORMAT).format(timer.until)
+  })
 }
 
 export function getAgentAwakeDescription(
