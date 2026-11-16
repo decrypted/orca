@@ -44,8 +44,13 @@ import {
 } from '../../shared/remote-runtime/pairing/mobile-pairing-custom-address'
 import {
   computerAwakeSettingsForMode,
-  normalizeComputerAwakeMode
+  computerAwakeSettingsForSelection,
+  readComputerAwakeSelection
 } from '../../shared/app-lifecycle/computer-awake-mode'
+import {
+  COMPUTER_AWAKE_POWER_SETTING_KEYS,
+  readComputerAwakePowerPolicy
+} from '../../shared/app-lifecycle/computer-awake-power-policy'
 import { resolveAiVaultSearchSettings } from '../../shared/ai-vault/search/ai-vault-search-settings'
 import { applySessionSearchSettingsChange } from '../ai-vault-search/session-search-enablement'
 import { getRuntimeEnvironmentRegistryRoot } from './runtime-environments/catalog/runtime-environment-registry-root'
@@ -120,12 +125,7 @@ export function registerSettingsHandlers(
     if ('computerAwakeMode' in sanitizedArgs) {
       Object.assign(
         sanitizedArgs,
-        computerAwakeSettingsForMode(
-          normalizeComputerAwakeMode(
-            sanitizedArgs.computerAwakeMode,
-            sanitizedArgs.keepComputerAwakeWhileAgentsRun
-          )
-        )
+        computerAwakeSettingsForSelection(readComputerAwakeSelection(sanitizedArgs))
       )
     } else if ('keepComputerAwakeWhileAgentsRun' in sanitizedArgs) {
       Object.assign(
@@ -223,9 +223,11 @@ export function registerSettingsHandlers(
       'computerAwakeMode' in sanitizedArgs ||
       'keepComputerAwakeWhileAgentsRun' in sanitizedArgs
     ) {
-      agentAwakeService?.setMode(
-        normalizeComputerAwakeMode(result.computerAwakeMode, result.keepComputerAwakeWhileAgentsRun)
-      )
+      const computerAwake = readComputerAwakeSelection(result)
+      agentAwakeService?.setMode(computerAwake.mode, computerAwake.timer)
+    }
+    if (COMPUTER_AWAKE_POWER_SETTING_KEYS.some((key) => key in sanitizedArgs)) {
+      agentAwakeService?.setPowerPolicy(readComputerAwakePowerPolicy(result))
     }
     await getClaudeAgentViewService().reconcile(result)
     const hookSettingChanged =

@@ -2,7 +2,9 @@ import type { PreloadApi } from '../../../../preload/api-types'
 import { legacyMatchTerminalSidebarWrite } from '../../../../shared/plugins/appearance/plugin-theme-settings'
 import {
   computerAwakeSettingsForMode,
-  normalizeComputerAwakeMode
+  computerAwakeSettingsForSelection,
+  normalizeComputerAwakeMode,
+  readComputerAwakeSelection
 } from '../../../../shared/app-lifecycle/computer-awake-mode'
 import { normalizeTerminalCursorStyleDefault } from '../../../../shared/terminal/appearance/terminal-cursor-style-settings'
 import { mergeSettings, stripRetiredWebChatSettings } from './web-preference-normalization'
@@ -51,12 +53,7 @@ export function createWebSettingsApi(): Pick<Partial<PreloadApi>, 'agentAwake'> 
         if ('computerAwakeMode' in sanitizedUpdates) {
           Object.assign(
             sanitizedUpdates,
-            computerAwakeSettingsForMode(
-              normalizeComputerAwakeMode(
-                sanitizedUpdates.computerAwakeMode,
-                sanitizedUpdates.keepComputerAwakeWhileAgentsRun
-              )
-            )
+            computerAwakeSettingsForSelection(readComputerAwakeSelection(sanitizedUpdates))
           )
         } else if ('keepComputerAwakeWhileAgentsRun' in sanitizedUpdates) {
           Object.assign(
