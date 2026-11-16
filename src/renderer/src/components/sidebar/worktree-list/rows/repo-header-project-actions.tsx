@@ -31,6 +31,7 @@ import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { getRepositoryIconSectionId } from '@/components/settings/repository/repository-settings-targets'
 import { WslMoveProjectMenuItem } from '@/components/wsl-move/WslMoveProjectMenuItem'
 import { WslMovedRepoUseHereMenuItem } from '@/components/wsl-move/WslMovedUseHereMenuItem'
+import { ProjectScopeSleepMenuItem } from '../../workspace-actions/sleep/ProjectScopeSleepMenuItem'
 import type { ProjectGroup } from '../../../../../../shared/project/groups/project-group-types'
 import type {
   Repo,
@@ -190,6 +191,10 @@ export const RepoHeaderProjectActionsMenu = React.memo(function RepoHeaderProjec
         ) : null}
         <WslMoveProjectMenuItem repo={repo} />
         <WslMovedRepoUseHereMenuItem repo={repo} />
+        <DropdownMenuSeparator />
+        <ProjectScopeSleepMenuItem
+          scope={{ kind: 'project', repos: hostRepos ? [...hostRepos.values()] : [repo] }}
+        />
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onSelect={() =>
