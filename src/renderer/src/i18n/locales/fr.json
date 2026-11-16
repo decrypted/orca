@@ -11247,8 +11247,8 @@
           "lidNoteWindows": "Le comportement de fermeture du couvercle suit les paramètres d'alimentation de cet appareil.",
           "lidNoteDefault": "Orca demande également à cet appareil de rester éveillé lorsque le couvercle est fermé, sous réserve de sa politique d'alimentation.",
           "timerUntil": "Jusqu’à {{time}}",
-          "modeDescriptionLidSleeps": "Choisissez Activé, Agent ou Désactivé. Le mode Agent empêche la mise en veille pendant que des agents travaillent. Fermer le capot met quand même cet appareil en veille.",
-          "lidNoteLidSleeps": "Fermer le capot met quand même cet appareil en veille."
+          "modeDescriptionLidSleeps": "Choisissez Activé, Agent ou Désactivé. Le mode Agent empêche la mise en veille pendant que des agents travaillent. Fermer le capot met quand même cet appareil en veille, sauf si logind est configuré pour respecter les verrous de veille (LidSwitchIgnoreInhibited=no).",
+          "lidNoteLidSleeps": "Fermer le capot met quand même cet appareil en veille, sauf si logind est configuré pour respecter les verrous de veille (LidSwitchIgnoreInhibited=no)."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Hooks de statut des agents",
@@ -13368,9 +13368,10 @@
           "onlyWhilePluggedIn": "Uniquement sur secteur",
           "onlyWhilePluggedInDescription": "Sur batterie, l’ordinateur se met en veille normalement ; le maintien en éveil reprend une fois rebranché.",
           "floorLabel": "Sur batterie, mettre en pause sous",
-          "floorDescription": "Sous ce niveau de charge, l’ordinateur se met en veille normalement ; le maintien en éveil reprend une fois rebranché ou {{margin}} points au-dessus.",
+          "floorDescription": "Sous ce niveau de charge, l’ordinateur se met en veille normalement jusqu’à ce qu’il soit rebranché.",
           "lidLabel": "Fermer le capot met l’ordinateur en veille",
-          "lidDescription": "Désactivé demande à cet appareil de rester éveillé capot fermé, selon sa politique d’alimentation."
+          "lidDescription": "Désactivé demande à cet appareil de rester éveillé capot fermé, selon sa politique d’alimentation.",
+          "windowsNoFloor": "Windows ne fournit pas le niveau de charge à Orca : sur batterie, l’ordinateur reste éveillé sans limite de charge."
         }
       },
       "right": {

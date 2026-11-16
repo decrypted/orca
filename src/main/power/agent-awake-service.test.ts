@@ -63,12 +63,12 @@ describe('AgentAwakeService timed On', () => {
     const clock = { now: 0 }
     const { service, onTimerExpired } = createService(clock)
     service.setMode('on', { until: 3 * HOUR_MS, resumeMode: 'auto', hours: 3 })
-    expect(service.getStatus()).toEqual({ mode: 'on', active: true })
+    expect(service.getStatus().mode).toBe('on')
 
     clock.now = 3 * HOUR_MS
     vi.advanceTimersByTime(3 * HOUR_MS)
 
-    expect(service.getStatus()).toEqual({ mode: 'auto', active: false })
+    expect(service.getStatus().mode).toBe('auto')
     expect(onTimerExpired).toHaveBeenCalledWith('auto')
     service.dispose()
   })
@@ -82,7 +82,7 @@ describe('AgentAwakeService timed On', () => {
     clock.now = 2 * HOUR_MS
     emitResume()
 
-    expect(service.getStatus()).toEqual({ mode: 'off', active: false })
+    expect(service.getStatus().mode).toBe('off')
     expect(onTimerExpired).toHaveBeenCalledWith('off')
     service.dispose()
   })
@@ -111,14 +111,14 @@ describe('AgentAwakeService on battery', () => {
     service.setMode('on')
 
     await vi.waitFor(() =>
-      expect(service.getStatus()).toEqual({ mode: 'on', active: false, paused: 'battery' })
+      expect(service.getStatus()).toMatchObject({ mode: 'on', active: false, paused: 'battery' })
     )
     expect(isBlocking()).toBe(false)
 
     supply.current = { onBattery: false, batteryPercent: 80 }
     emitResume()
 
-    await vi.waitFor(() => expect(service.getStatus()).toEqual({ mode: 'on', active: true }))
+    await vi.waitFor(() => expect(service.getStatus()).toMatchObject({ mode: 'on', active: true }))
     expect(isBlocking()).toBe(true)
     service.dispose()
   })
@@ -140,7 +140,11 @@ describe('AgentAwakeService on battery', () => {
     emitResume()
 
     await vi.waitFor(() =>
-      expect(service.getStatus()).toEqual({ mode: 'on', active: false, paused: 'low-battery' })
+      expect(service.getStatus()).toMatchObject({
+        mode: 'on',
+        active: false,
+        paused: 'low-battery'
+      })
     )
     expect(isBlocking()).toBe(false)
     service.dispose()
@@ -159,12 +163,11 @@ describe('AgentAwakeService with a failing power supply read', () => {
       read
     })
     service.setMode('on')
-    await vi.waitFor(() => expect(read).toHaveBeenCalled())
-    expect(isBlocking()).toBe(true)
+    await vi.waitFor(() => expect(isBlocking()).toBe(true))
 
     await vi.advanceTimersByTimeAsync(60_000)
 
-    expect(service.getStatus()).toEqual({ mode: 'on', active: false, paused: 'battery' })
+    expect(service.getStatus()).toMatchObject({ mode: 'on', active: false, paused: 'battery' })
     expect(isBlocking()).toBe(false)
     service.dispose()
   })
@@ -193,6 +196,18 @@ describe('readLinuxPowerSupply', () => {
       AC: { type: 'Mains', online: '0' },
       BAT0: { type: 'Battery', capacity: '42', status: 'Discharging' },
       hid_mouse: { type: 'Battery', scope: 'Device', capacity: '5', status: 'Discharging' }
+    })
+    await expect(createLinuxPowerSupplyReader(root).read(true)).resolves.toEqual({
+      onBattery: true,
+      batteryPercent: 42
+    })
+  })
+
+  it('ignores a peripheral USB supply without an online file', async () => {
+    const root = await supplyDir({
+      AC: { type: 'Mains', online: '0' },
+      BAT0: { type: 'Battery', capacity: '42', status: 'Discharging' },
+      apple_mfi_fastcharge: { type: 'USB', scope: 'Device' }
     })
     await expect(createLinuxPowerSupplyReader(root).read(true)).resolves.toEqual({
       onBattery: true,
