@@ -36,7 +36,10 @@ export const WORKSPACE_PORT_METHODS = [
     name: 'workspacePorts.scanHost',
     permission: 'workspace',
     params: WorkspacePortScanHostParams,
-    handler: async (params, { runtime }) => runtime.scanWorkspacePortsOnHost(params.worktree)
+    handler: async (params, { runtime }) =>
+      runtime.scanWorkspacePortsOnHost(params.worktree, {
+        ignorePortDetectionSetting: params.ignorePortDetectionSetting === true
+      })
   }),
   defineMethod({
     name: 'workspacePorts.killHost',

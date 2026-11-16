@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import { OptionalString, requiredNumber, requiredString } from '../rpc-param-primitives'
+import {
+  OptionalBoolean,
+  OptionalString,
+  requiredNumber,
+  requiredString
+} from '../rpc-param-primitives'
 
 export const WorkspacePortScanParams = z.object({
   repoId: OptionalString
@@ -18,7 +23,9 @@ export const WorkspacePortProbePageParams = z.object({
 })
 
 export const WorkspacePortScanHostParams = z.object({
-  worktree: requiredString('Missing worktree selector')
+  worktree: requiredString('Missing worktree selector'),
+  /** Set by `orca ports`: an explicit request runs even when background detection is off. */
+  ignorePortDetectionSetting: OptionalBoolean
 })
 
 export const WorkspacePortKillHostParams = z.object({
