@@ -4,7 +4,8 @@ import type { ReduceMotionPreference } from '../../../../shared/accessibility/re
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
 // Why shared: one per chat row would otherwise each hold a MediaQueryList and listener.
-let reducedMotionMedia: MediaQueryList | null = null
+let watchedMatchMedia: typeof window.matchMedia | null = null
+let unwatchOsReducedMotion: (() => void) | null = null
 let osReduced = false
 let reduceMotionAlways = false
 const reduceMotionSubscribers = new Set<() => void>()
@@ -16,19 +17,23 @@ function notifyReduceMotionSubscribers(): void {
 }
 
 function watchOsReducedMotion(): void {
-  if (
-    reducedMotionMedia ||
-    typeof window === 'undefined' ||
-    typeof window.matchMedia !== 'function'
-  ) {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return
   }
-  reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY)
-  osReduced = reducedMotionMedia.matches
-  reducedMotionMedia.addEventListener('change', (event) => {
+  // Why: a replaced window.matchMedia (e.g. a test stub) must not keep answering from the old list.
+  if (window.matchMedia === watchedMatchMedia) {
+    return
+  }
+  unwatchOsReducedMotion?.()
+  watchedMatchMedia = window.matchMedia
+  const media = window.matchMedia(REDUCED_MOTION_QUERY)
+  osReduced = media.matches
+  const onChange = (event: MediaQueryListEvent): void => {
     osReduced = event.matches
     notifyReduceMotionSubscribers()
-  })
+  }
+  media.addEventListener('change', onChange)
+  unwatchOsReducedMotion = () => media.removeEventListener('change', onChange)
 }
 
 function subscribeToReducedMotion(onChange: () => void): () => void {
