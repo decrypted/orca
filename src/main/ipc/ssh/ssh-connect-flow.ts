@@ -107,6 +107,9 @@ async function admitConnect(
       if (!quiet && existing.quiet) {
         existing.quiet.active = false
       }
+      if (!automatic) {
+        existing.automatic = false
+      }
       return existing.promise
     }
   }
@@ -143,6 +146,7 @@ async function admitConnect(
   const attempt: ConnectAttempt = {
     authority: getSshProviderAuthority(targetId),
     promise,
+    automatic,
     ...(quietMode ? { quiet: quietMode } : {})
   }
   registered = attempt
