@@ -35,6 +35,7 @@ import {
   applyModelLanguage
 } from '@/lib/monaco-languages/plugin-syntax-editor-options'
 import { useMonacoTheme } from '@/hooks/use-monaco-theme'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useEditorModelRekeyCarry } from '../model-lifetime/identity/editor-model-rekey-carry'
 
 type MonacoEditorProps = {
@@ -114,6 +115,7 @@ export default function MonacoEditor({
   const setPendingEditorReveal = useAppStore((s) => s.setPendingEditorReveal)
   const setEditorCursorLine = useAppStore((s) => s.setEditorCursorLine)
   const typography = useEditorTypography()
+  const reduceMotion = usePrefersReducedMotion()
   const typographyOptions = useMemo(() => monacoTypographyOptions(typography), [typography])
   // Mirrors Monaco's automatic spacing closely enough to size before mount.
   const autoHeightLineHeight = typography.lineHeight || Math.ceil(typography.fontSize * 1.45)
@@ -320,7 +322,7 @@ export default function MonacoEditor({
                 handleMouseWheel: autoHeightUsesInternalScroll
               }
             : undefined,
-          smoothScrolling: true,
+          smoothScrolling: !reduceMotion,
           cursorSmoothCaretAnimation: 'off',
           padding: { top: 0 },
           find: monacoFindOptions,

@@ -810,7 +810,7 @@
       },
       "reduceMotion": {
         "title": "Reduce motion",
-        "description": "Turn off animations and transitions, such as the spinner on working agents. Follow system uses the reduced motion setting of your OS.",
+        "description": "Stop animations and transitions in Orca's interface, such as the spinner on working agents. Browser pages, plugin views and notebook outputs keep following your OS setting.",
         "system": "Follow system",
         "always": "Always",
         "keywords": {
