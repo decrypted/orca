@@ -157,6 +157,10 @@ export function SshHostAdvancedFields({
                   {t(
                     'auto.components.settings.SshTargetForm.reconnectOnLaunchHelp',
                     'When off, Orca leaves this host, and any Orca server reached through it, disconnected at launch until you connect it.'
+                  )}{' '}
+                  {t(
+                    'auto.components.settings.SshTargetForm.reconnectOnLaunchGlobalHelp',
+                    'Turning off Connect to remote hosts automatically does this for every host.'
                   )}
                 </p>
               </div>
