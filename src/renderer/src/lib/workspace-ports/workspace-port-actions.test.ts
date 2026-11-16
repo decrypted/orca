@@ -22,7 +22,10 @@ vi.mock('@/lib/workspace/activation/worktree-activation', () => ({
   activateAndRevealWorktree: vi.fn()
 }))
 
-import { openWorkspacePortInBrowser } from './workspace-port-actions'
+import {
+  openWorkspacePortInBrowser,
+  publishWorkspacePortScanForHost
+} from './workspace-port-actions'
 
 const port: WorkspacePort = {
   id: '127.0.0.1:3000',
@@ -122,5 +125,21 @@ describe('openWorkspacePortInBrowser on a managed SSH server', () => {
       URL,
       expect.objectContaining({ browserRuntimeEnvironmentId: ENVIRONMENT_ID })
     )
+  })
+})
+
+describe('publishWorkspacePortScanForHost', () => {
+  it('drops a scan that finishes after port detection was turned off', () => {
+    mocks.getState.mockReturnValue({ settings: { portDetectionEnabled: false } })
+    const replaceWorkspacePortScans = vi.fn()
+
+    publishWorkspacePortScanForHost({
+      replaceWorkspacePortScans,
+      getWorkspacePortScansByKey: () => ({}),
+      scanKey: 'local:all',
+      scan: { platform: 'linux', scannedAt: 1, ports: [port] }
+    })
+
+    expect(replaceWorkspacePortScans).not.toHaveBeenCalled()
   })
 })

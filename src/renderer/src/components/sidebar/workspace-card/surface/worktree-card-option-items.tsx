@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import type { WorktreeCardProperty } from '../../../../../../shared/ui-chrome-types'
 import { getWorkspaceCardPropertiesValue } from '../../../../../../shared/workspace-view/workspace-view-options'
+import { isPortDetectionEnabled } from '../../../../../../shared/workspace/ports/port-detection-settings'
 import {
   AGENT_ACTIVITY_DISPLAY_OPTIONS,
   CARD_LAYOUT_OPTIONS,
@@ -43,6 +44,17 @@ function useToggleCardProperty(): (property: WorktreeCardProperty, checked: bool
   )
 }
 
+// Why: hide Ports rather than unselect it, so turning detection back on restores the saved choice.
+function useAvailableCardOptions<T extends { id: WorktreeCardProperty }>(
+  options: readonly T[]
+): readonly T[] {
+  const portDetectionEnabled = useAppStore((s) => isPortDetectionEnabled(s.settings))
+  return useMemo(
+    () => (portDetectionEnabled ? options : options.filter((opt) => opt.id !== 'ports')),
+    [options, portDetectionEnabled]
+  )
+}
+
 function AgentModelProperty(): React.JSX.Element {
   const t = useTranslate()
   const showAgentModels = useAppStore((s) => s.showAgentModels !== false)
@@ -68,7 +80,11 @@ export function WorktreeCardDisplayMenuItem({
   const worktreeCardProperties = useAppStore((s) => s.worktreeCardProperties)
   const hasProjectGroups = useAppStore((s) => s.projectGroups.length > 0)
   const toggleProperty = useToggleCardProperty()
-  const options = useMemo(() => getWorktreeCardDisplayOptions(hasProjectGroups), [hasProjectGroups])
+  const allOptions = useMemo(
+    () => getWorktreeCardDisplayOptions(hasProjectGroups),
+    [hasProjectGroups]
+  )
+  const options = useAvailableCardOptions(allOptions)
   const experimentalCard = useAppStore(selectDrawsNewWorktreeCards)
   const detailsRow = useAppStore((s) => s.settings?.worktreeCardDetailsRow !== false)
   const updateSettings = useAppStore((s) => s.updateSettings)
@@ -167,7 +183,11 @@ export function WorktreeCardPropertiesMenuItem({
   const agentActivityDisplayMode = useAppStore((s) => s.agentActivityDisplayMode)
   const setAgentActivityDisplayMode = useAppStore((s) => s.setAgentActivityDisplayMode)
   const toggleProperty = useToggleCardProperty()
-  const value = getWorkspaceCardPropertiesValue(worktreeCardProperties, compact)
+  const propertyOptions = useAvailableCardOptions(PROPERTY_OPTIONS)
+  const value = getWorkspaceCardPropertiesValue(
+    worktreeCardProperties.filter((property) => propertyOptions.some((opt) => opt.id === property)),
+    compact
+  )
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
@@ -188,7 +208,7 @@ export function WorktreeCardPropertiesMenuItem({
         className="w-48"
         data-workspace-board-preserve-open={boardAttr(preserveWorkspaceBoardOpen)}
       >
-        {PROPERTY_OPTIONS.map((opt) => (
+        {propertyOptions.map((opt) => (
           <DropdownMenuCheckboxItem
             key={opt.id}
             checked={worktreeCardProperties.includes(opt.id)}

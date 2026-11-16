@@ -192,9 +192,11 @@
   }
 }
 
-.pane-focus-rim-flash::before {
+.pane-focus-rim-flash {
   @variant motion-reduce {
-    animation: none;
+    &::before {
+      animation: none;
+    }
   }
 }
 

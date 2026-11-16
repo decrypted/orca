@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from 'react'
+import { useLayoutEffect, useSyncExternalStore } from 'react'
 import type { ReduceMotionPreference } from '../../../shared/accessibility/reduce-motion-settings'
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
@@ -64,14 +64,18 @@ export function usePrefersReducedMotion(): boolean {
 export function useReduceMotionSetting(preference: ReduceMotionPreference | undefined): void {
   const always = preference === 'always'
 
-  useEffect(() => {
-    const root = document.documentElement
-    if (always) {
-      root.dataset.reduceMotion = ''
-    } else {
-      delete root.dataset.reduceMotion
+  useLayoutEffect(() => {
+    if (!always) {
+      return
     }
-    reduceMotionAlways = always
+    const root = document.documentElement
+    root.dataset.reduceMotion = ''
+    reduceMotionAlways = true
     notifyReduceMotionSubscribers()
+    return () => {
+      delete root.dataset.reduceMotion
+      reduceMotionAlways = false
+      notifyReduceMotionSubscribers()
+    }
   }, [always])
 }

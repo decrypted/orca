@@ -10,7 +10,7 @@ export function deleteWorkspacesCountLabel(count: number, t: Translate = transla
   )
 }
 
-function sleepWorkspacesCountLabel(count: number, t: Translate = translate): string {
+export function sleepWorkspacesCountLabel(count: number, t: Translate = translate): string {
   return t(
     'auto.components.sidebar.workspaceBatchActionLabels.sleepCount',
     'Sleep {{count}} Workspaces',

@@ -16,6 +16,7 @@ import {
   scanWorkspacePortProbes
 } from '../ports/workspace-port-ownership'
 import { probeWorkspacePortPage } from '../ports/workspace-port-page-probe'
+import { portDetectionOffScan } from '../ports/port-detection-off-scan'
 
 type WorkspacePortHandlersOptions = {
   advertisedUrlEvents?: Pick<AdvertisedUrlWatcher, 'onDidChange'>
@@ -47,6 +48,10 @@ export function registerWorkspacePortHandlers(
   ipcMain.handle(
     'workspacePorts:scan',
     (_event, rawArgs?: unknown): Promise<WorkspacePortScanResult> => {
+      const offScan = portDetectionOffScan(store.getSettings())
+      if (offScan) {
+        return Promise.resolve(offScan)
+      }
       const args = parseScanRequest(rawArgs)
       const worktrees = getStoreWorkspacePortProbes(store, args?.repoId)
       const key = JSON.stringify(

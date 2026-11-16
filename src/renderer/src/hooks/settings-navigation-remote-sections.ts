@@ -11,6 +11,7 @@ import { getPrivacyPaneSearchEntries } from '@/components/settings/privacy/priva
 import { getRepositoryPaneSearchEntries } from '@/components/settings/repository/repository-search'
 import { buildSettingsProjectList } from '@/components/settings/navigation/settings-project-list'
 import { getSshPaneSearchEntries } from '@/components/settings/ssh/ssh-search'
+import { getRemoteHostAutoConnectSearchEntry } from '@/components/settings/remote-host-auto-connect/remote-host-auto-connect-search'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import type { SettingsNavSection } from '@/components/settings/navigation/settings-navigation-types'
@@ -67,7 +68,9 @@ export function buildRemoteSettingsSections(
         ? 'Connect this browser to a saved Orca server.'
         : 'Run Orca on another machine and work on it from here.',
       icon: Server,
-      searchEntries: [runtimeEnvironmentsSearchEntry],
+      searchEntries: isWebClient
+        ? [runtimeEnvironmentsSearchEntry]
+        : [runtimeEnvironmentsSearchEntry, getRemoteHostAutoConnectSearchEntry()],
       group: 'remote'
     },
     ...(showDesktopOnlySettings && isMac

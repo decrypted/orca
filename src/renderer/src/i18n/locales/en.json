@@ -438,6 +438,7 @@
     },
     "newTab": {
       "emptyHint": "Search or enter an address above. Sites you visit, dev servers running in this workspace, and its PR and issue will show up here.",
+      "emptyHintPortDetectionOff": "Search or enter an address above. Sites you visit and this workspace's PR and issue will show up here. Port detection is off, so dev servers won't.",
       "openServerFailed": "Couldn’t open {{address}}",
       "removedFromHistory": "Removed “{{title}}” from history",
       "removeSuggestion": "Remove from history",
@@ -824,7 +825,7 @@
       },
       "reduceMotion": {
         "title": "Reduce motion",
-        "description": "Turn off animations and transitions, such as the spinner on working agents. Follow system uses the reduced motion setting of your OS.",
+        "description": "Stop animations and transitions in Orca's interface, such as the spinner on working agents. Browser pages, plugin views and notebook outputs keep following your OS setting.",
         "system": "Follow system",
         "always": "Always",
         "keywords": {
@@ -1518,7 +1519,7 @@
       "description": "Checks Orca runs on its own while you work.",
       "portDetection": {
         "title": "Detect ports",
-        "description": "Check which ports your workspaces listen on, locally and on remote hosts. When off, Orca runs no port scans and hides the Ports status bar item.",
+        "description": "Show which ports your workspaces listen on, locally and on remote hosts. When off, Orca stops checking which ports listen on this computer, also for connected clients, and hides the Ports status bar item.",
         "keywords": {
           "ports": "ports",
           "scan": "scan",
@@ -1531,7 +1532,7 @@
       },
       "remoteHostAutoConnect": {
         "title": "Connect to remote hosts automatically",
-        "description": "Reconnect SSH hosts and the Orca servers on them at launch, and keep trying to reach them in the background. When off, Orca connects to a host only once you connect it yourself.",
+        "description": "Let Orca connect to SSH hosts, and the Orca servers on them, on its own: at launch and in the background. When off, it connects a host only when you do. Servers paired directly, without an SSH host, are not affected.",
         "keywords": {
           "ssh": "ssh",
           "remote": "remote",
@@ -10101,6 +10102,7 @@
           "proxyConnectionReuseHelp": "Faster connects through slow ProxyCommand or ProxyJump hosts. Only enable if your ssh_config doesn't rely on host-specific Match or %h rules.",
           "reconnectOnLaunch": "Reconnect on launch",
           "reconnectOnLaunchHelp": "When off, Orca leaves this host, and any Orca server reached through it, disconnected at launch until you connect it.",
+          "reconnectOnLaunchGlobalHelp": "Turning off Connect to remote hosts automatically does this for every host.",
           "allowRemoteCliControl": "Allow this host to control Orca browser tabs in its workspaces",
           "allowRemoteCliControlHelp": "On by default for new hosts. Agents and orca commands on this host can open, read and use Orca browser tabs on this desktop, only in this host's workspaces and only while it is connected. Tabs it controls show its name. Terminals started on this host by an older Orca also need this on to run orca orchestration commands. It cannot read your files, clipboard or cookies.",
           "editTitle": "Edit SSH host",
@@ -12307,8 +12309,8 @@
           "lidNoteMac": "Prevents idle sleep with the lid open; closing the lid still puts this Mac to sleep.",
           "lidNoteDefault": "Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "timerUntil": "Until {{time}}",
-          "modeDescriptionLidSleeps": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Closing the lid still puts this device to sleep.",
-          "lidNoteLidSleeps": "Closing the lid still puts this device to sleep."
+          "modeDescriptionLidSleeps": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Closing the lid still puts this device to sleep, unless logind is set to honor sleep locks (LidSwitchIgnoreInhibited=no).",
+          "lidNoteLidSleeps": "Closing the lid still puts this device to sleep, unless logind is set to honor sleep locks (LidSwitchIgnoreInhibited=no)."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agent status hooks",
@@ -12569,7 +12571,8 @@
         },
         "BrowserLocalhostWorktreeLabelsSetting": {
           "1db3c8b983": "Open workspace ports as worktree-specific Orca localhost URLs so browser tabs are easier to tell apart.",
-          "1af20fbf51": "Localhost worktree labels"
+          "1af20fbf51": "Localhost worktree labels",
+          "needsPortDetection": "Needs port detection, which is off in Advanced."
         },
         "AgentRuntimeSetting": {
           "label": "Agent runtime",
@@ -14547,9 +14550,10 @@
           "onlyWhilePluggedIn": "Only while plugged in",
           "onlyWhilePluggedInDescription": "On battery power the computer sleeps normally; keeping awake resumes when it is plugged in again.",
           "floorLabel": "On battery, pause below",
-          "floorDescription": "Below this charge the computer sleeps normally; keeping awake resumes when it is plugged in or charged {{margin}} points above it.",
+          "floorDescription": "Below this charge the computer sleeps normally until it is plugged in again.",
           "lidLabel": "Closing the lid puts the computer to sleep",
-          "lidDescription": "Off asks this device to stay awake with the lid closed, subject to its power policy."
+          "lidDescription": "Off asks this device to stay awake with the lid closed, subject to its power policy.",
+          "windowsNoFloor": "Windows gives Orca no charge level, so on battery the computer stays awake with no charge limit."
         }
       },
       "right": {

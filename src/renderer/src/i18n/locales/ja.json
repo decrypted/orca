@@ -11357,8 +11357,8 @@
           "lidNoteWindows": "蓋を閉じる動作は、このデバイスの電源設定に従います。",
           "lidNoteDefault": "Orca はまた、電源ポリシーに従って、蓋が閉じられているときにデバイスが起動したままになるようにこのデバイスに要求します。",
           "timerUntil": "{{time}} まで",
-          "modeDescriptionLidSleeps": "[オン]、[Agent]、または [オフ] を選択します。Agent が動作している間、Agent モードは起動したままになります。蓋を閉じるとこのデバイスはスリープします。",
-          "lidNoteLidSleeps": "蓋を閉じるとこのデバイスはスリープします。"
+          "modeDescriptionLidSleeps": "[オン]、[Agent]、または [オフ] を選択します。Agent が動作している間、Agent モードは起動したままになります。logind がスリープロックを尊重する設定 (LidSwitchIgnoreInhibited=no) でない限り、蓋を閉じるとこのデバイスはスリープします。",
+          "lidNoteLidSleeps": "logind がスリープロックを尊重する設定 (LidSwitchIgnoreInhibited=no) でない限り、蓋を閉じるとこのデバイスはスリープします。"
         },
         "AgentAwakeSetting": {
           "on": "オン",
@@ -13623,9 +13623,10 @@
           "onlyWhilePluggedIn": "電源接続時のみ",
           "onlyWhilePluggedInDescription": "バッテリー駆動中は通常どおりスリープし、電源に接続すると再びスリープを防ぎます。",
           "floorLabel": "バッテリー駆動時に一時停止する残量",
-          "floorDescription": "この残量を下回ると通常どおりスリープします。電源に接続するか、残量が {{margin}} ポイント上回ると再びスリープを防ぎます。",
+          "floorDescription": "この残量を下回ると、再び電源に接続するまで通常どおりスリープします。",
           "lidLabel": "蓋を閉じるとコンピュータをスリープする",
-          "lidDescription": "オフにすると、電源ポリシーの範囲内で蓋を閉じてもスリープしないようこのデバイスに要求します。"
+          "lidDescription": "オフにすると、電源ポリシーの範囲内で蓋を閉じてもスリープしないようこのデバイスに要求します。",
+          "windowsNoFloor": "Windows は Orca にバッテリー残量を提供しないため、バッテリー駆動中は残量の制限なくスリープしません。"
         }
       },
       "right": {

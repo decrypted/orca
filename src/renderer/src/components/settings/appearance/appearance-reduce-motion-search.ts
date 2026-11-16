@@ -8,7 +8,7 @@ export const getReduceMotionEntries = createLocalizedCatalog((): SettingsSearchE
     title: translate('settings.appearance.reduceMotion.title', 'Reduce motion'),
     description: translate(
       'settings.appearance.reduceMotion.description',
-      'Turn off animations and transitions, such as the spinner on working agents. Follow system uses the reduced motion setting of your OS.'
+      "Stop animations and transitions in Orca's interface, such as the spinner on working agents. Browser pages, plugin views and notebook outputs keep following your OS setting."
     ),
     keywords: [
       ...translateSearchKeyword('settings.appearance.reduceMotion.keywords.motion', 'motion'),
