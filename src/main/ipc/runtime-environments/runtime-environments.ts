@@ -236,14 +236,13 @@ export async function registerRuntimeEnvironmentHandlers(
   await retireStateOfRemovedEnvironments(store)
   await Promise.all(
     (await listEnvironments(getUserDataPath())).map(async (environment) => {
-      if (
-        !isRuntimeEnvironmentManuallyDisconnected(environment.id) &&
-        !isGatedOffWslHost(environment)
-      ) {
-        const owner = await getRuntimeEnvironmentStatusOwner(getUserDataPath(), environment.id)
-        if (!isRuntimeEnvironmentManuallyDisconnected(environment.id)) {
-          owner.activate()
-        }
+      if (isGatedOffWslHost(environment)) {
+        return
+      }
+      // A held server gets a retired owner too, so renderers see it disconnected and stop polling it.
+      const owner = await getRuntimeEnvironmentStatusOwner(getUserDataPath(), environment.id)
+      if (!isRuntimeEnvironmentManuallyDisconnected(environment.id)) {
+        owner.activate()
       }
     })
   )
