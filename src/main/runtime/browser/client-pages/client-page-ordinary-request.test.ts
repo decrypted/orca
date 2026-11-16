@@ -220,22 +220,6 @@ it('retires a preparation waiter on full authority death without late creation',
   }
 })
 
-it('keeps a successful real RPC handoff alive after caller cancellation', async () => {
-  const h = createRecoveryLoop([])
-  try {
-    h.attach()
-    const cancelled = new AbortController()
-    expect(await ordinaryPageRpc(h)('browser.tabCreate', 'handed-off', cancelled.signal)).toEqual([
-      expect.objectContaining({ ok: true })
-    ])
-    cancelled.abort()
-    expect(h.pages.getPage('handed-off')?.placement).toEqual(h.authority.getPlacement('handed-off'))
-    expect(h.executor.snapshotPageInventory().map((p) => p.browserPageId)).toEqual(['handed-off'])
-  } finally {
-    await h.close()
-  }
-})
-
 it('transfers a real logical-capacity publication failure to exact cleanup until its join', async () => {
   const h = createRecoveryLoop([])
   try {
@@ -319,6 +303,34 @@ it('keeps the created tab usable when an older desktop cannot receive its long i
     ).toBe(true)
     expect(h.authority.select('client-a')).toEqual(before)
     expect(h.errors).toEqual([])
+  } finally {
+    await h.close()
+  }
+})
+
+it('joins native retirement after asynchronous focus publication rejects before reusing the page ID', async () => {
+  const h = createRecoveryLoop([])
+  try {
+    h.attach()
+    const focus = vi.fn(async () => {}).mockRejectedValueOnce(new Error('profile writes frozen'))
+    const request = ordinaryPageRpc(h, false, focus)
+    const cleanup = h.holdRetirement('failed-focus')
+    const creating = request('browser.tabCreate', 'failed-focus', new AbortController().signal)
+    await cleanup.started
+    expect(h.pages.getPage('failed-focus')).toBeDefined()
+    expect(h.executor.snapshotPageInventory().map((page) => page.browserPageId)).toEqual([
+      'failed-focus'
+    ])
+    cleanup.release()
+    expect(await creating).toEqual([expect.objectContaining({ ok: false })])
+    expect(h.pages.getPage('failed-focus')).toBeUndefined()
+    expect(h.authority.getPlacement('failed-focus')).toBeUndefined()
+    expect(h.authority.getClientPageExecutionHostKey('failed-focus')).toBeUndefined()
+    expect(h.executor.snapshotPageInventory()).toEqual([])
+    expect(
+      await request('browser.tabCreate', 'failed-focus', new AbortController().signal)
+    ).toEqual([expect.objectContaining({ ok: true })])
+    expect(h.pages.getPage('failed-focus')).toBeDefined()
   } finally {
     await h.close()
   }

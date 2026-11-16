@@ -95,6 +95,7 @@ async function gitExecFileAsyncUnlocked(
         )
         const captureOptions = {
           cwd: command.cwd,
+          ownedPosixGroup: process.platform !== 'win32' && !command.wsl,
           encoding: (options.encoding ?? 'utf-8') as BufferEncoding,
           maxBuffer: options.maxBuffer,
           timeout: timeoutMs,
@@ -137,6 +138,9 @@ async function gitExecFileAsyncUnlocked(
           ) {
             await terminationState.current
             const wasMissing = invalidateMissingDirectWslGit(error, resolved)
+            if (options.canStart?.() === false || (await options.beforeStart?.()) === false) {
+              throw createAbortError()
+            }
             const fallback = resolveGitCommand(args, effectiveOptions, true, true)
             result = await capture(fallback)
             // Why: matching failures can be normal Git control flow; only a successful login retry proves the direct environment was insufficient.
@@ -160,7 +164,7 @@ async function gitExecFileAsyncUnlocked(
       }
       try {
         options.admissionSignal?.throwIfAborted()
-        if (options.canStart?.() === false) {
+        if (options.canStart?.() === false || (await options.beforeStart?.()) === false) {
           throw createAbortError()
         }
         return await runCapturedCommand()
@@ -260,6 +264,7 @@ async function gitExecFileAsyncBufferInSpan(
       })
       const { stdout } = await execFileCapture(resolved.binary, resolved.args, {
         cwd: resolved.cwd,
+        ownedPosixGroup: process.platform !== 'win32' && !resolved.wsl,
         encoding: 'buffer',
         signal: options.signal,
         stdin: options.stdin,
