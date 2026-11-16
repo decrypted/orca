@@ -35,7 +35,7 @@ export default function PortsPanel({ isVisible }: { isVisible: boolean }): React
 
   const portDetectionEnabled = useAppStore((state) => isPortDetectionEnabled(state.settings))
 
-  // Direct SSH ports are pushed by its relay and this panel also manages its forwards.
+  // Direct SSH has no port detection; its panel only manages forwards.
   if (!portDetectionEnabled && host.kind !== 'direct-ssh') {
     const forwardTargetId = workspaceId && host.kind === 'endpoint' ? sshForwardTargetId : null
     return (
