@@ -3961,7 +3961,10 @@
             "onDescription": "Manter este computador ativo continuamente",
             "autoDescription": "Permanecer ativo enquanto um agente está trabalhando",
             "offDescription": "Permitir o comportamento normal de suspensão do sistema",
-            "timerHeading": "Manter ativo por"
+            "timerHeading": "Manter ativo por",
+            "pausedOnBattery": "Pausado na bateria",
+            "pausedLowBattery": "Pausado abaixo de {{percent}}",
+            "batterySettings": "Configurações de bateria e tampa…"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "A conexão anterior foi encerrada",
@@ -8962,7 +8965,9 @@
           "lidNoteWindows": "O comportamento ao fechar a tampa segue as configurações de energia deste dispositivo.",
           "lidNoteMac": "Impede a suspensão por inatividade com a tampa aberta; fechar a tampa ainda coloca este Mac em repouso.",
           "lidNoteDefault": "O Orca também solicita que este dispositivo permaneça ativo com a tampa fechada, conforme sua política de energia.",
-          "timerUntil": "Até {{time}}"
+          "timerUntil": "Até {{time}}",
+          "modeDescriptionLidSleeps": "Escolha Ativado, Agente ou Desativado. O modo Agente mantém o computador ativo enquanto os agentes trabalham. Fechar a tampa ainda coloca este dispositivo em repouso.",
+          "lidNoteLidSleeps": "Fechar a tampa ainda coloca este dispositivo em repouso."
         },
         "providerAccountScope": {
           "remoteServer": "Servidor remoto: {{value0}}",
@@ -10301,6 +10306,14 @@
           "cancel": "Cancelar",
           "confirm": "Remover",
           "unknownHost": "Host desconhecido"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "Somente quando conectado à energia",
+          "onlyWhilePluggedInDescription": "Na bateria, o computador entra em repouso normalmente; volta a ficar ativo quando for conectado novamente.",
+          "floorLabel": "Na bateria, pausar abaixo de",
+          "floorDescription": "Abaixo desta carga, o computador entra em repouso normalmente; volta a ficar ativo quando for conectado ou estiver {{margin}} pontos acima.",
+          "lidLabel": "Fechar a tampa coloca o computador em repouso",
+          "lidDescription": "Desativado pede a este dispositivo que fique ativo com a tampa fechada, conforme sua política de energia."
         }
       },
       "right": {
