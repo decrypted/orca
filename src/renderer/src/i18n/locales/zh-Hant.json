@@ -5997,7 +5997,8 @@
             "ariaLabel": "{{title}}，{{status}}",
             "onDescription": "讓這台電腦持續處於喚醒狀態",
             "autoDescription": "代理程式工作時防止電腦進入睡眠狀態",
-            "offDescription": "允許正常的系統睡眠行為"
+            "offDescription": "允許正常的系統睡眠行為",
+            "timerHeading": "保持喚醒時間"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "之前的連線關閉了",
@@ -12465,7 +12466,8 @@
           "modeDescriptionDefault": "選擇「開啟」、「代理程式」或「關閉」。代理程式模式會在代理程式工作時保持喚醒狀態。Orca 也會要求此裝置在合蓋時保持喚醒狀態，實際行為取決於其電源原則。",
           "lidNoteWindows": "合蓋行為遵循該裝置的電源設定。",
           "lidNoteMac": "開蓋時防止閒置休眠；合上蓋子仍會使此 Mac 進入睡眠狀態。",
-          "lidNoteDefault": "Orca 也會要求此裝置在合蓋時保持喚醒狀態，實際行為取決於其電源原則。"
+          "lidNoteDefault": "Orca 也會要求此裝置在合蓋時保持喚醒狀態，實際行為取決於其電源原則。",
+          "timerUntil": "直到 {{time}}"
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "代理程式狀態鉤子",
@@ -13515,7 +13517,8 @@
         "AgentAwakeSetting": {
           "on": "開啟",
           "auto": "代理程式",
-          "off": "關"
+          "off": "關",
+          "timerActive": "{{until}}，之後{{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "此執行環境的 GitHub CLI 對於帳戶綁定來說太舊（需要 gh ≥ 2.40）。",

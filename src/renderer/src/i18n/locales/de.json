@@ -5164,7 +5164,8 @@
             "ariaLabel": "{{title}}, {{status}}",
             "onDescription": "Diesen Computer dauerhaft wach halten",
             "autoDescription": "Wach bleiben, solange ein Agent arbeitet",
-            "offDescription": "Normalen Systemruhezustand zulassen"
+            "offDescription": "Normalen Systemruhezustand zulassen",
+            "timerHeading": "Wach halten für"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "Die vorherige Verbindung wurde geschlossen",
@@ -11544,7 +11545,8 @@
           "modeDescriptionDefault": "„Ein“, „Agent“ oder „Aus“ auswählen. Im Modus „Agent“ bleibt der Computer wach, während Agenten arbeiten. Orca fordert das Gerät auch bei geschlossenem Deckel auf, wach zu bleiben, soweit dessen Energierichtlinie dies zulässt.",
           "lidNoteWindows": "Das Verhalten beim Zuklappen richtet sich nach den Energieeinstellungen dieses Geräts.",
           "lidNoteMac": "Verhindert den Ruhezustand bei Inaktivität bei geöffnetem Deckel; beim Zuklappen wechselt dieser Mac weiterhin in den Ruhezustand.",
-          "lidNoteDefault": "Orca fordert das Gerät auch bei geschlossenem Deckel auf, wach zu bleiben, soweit dessen Energierichtlinie dies zulässt."
+          "lidNoteDefault": "Orca fordert das Gerät auch bei geschlossenem Deckel auf, wach zu bleiben, soweit dessen Energierichtlinie dies zulässt.",
+          "timerUntil": "Bis {{time}}"
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agentenstatus-Hooks",
@@ -12578,7 +12580,8 @@
         "AgentAwakeSetting": {
           "on": "Ein",
           "auto": "Agent",
-          "off": "Aus"
+          "off": "Aus",
+          "timerActive": "{{until}}, danach {{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "Die GitHub-CLI dieser Laufzeitumgebung ist für die Kontozuordnung zu alt (gh ≥ 2.40 erforderlich).",
