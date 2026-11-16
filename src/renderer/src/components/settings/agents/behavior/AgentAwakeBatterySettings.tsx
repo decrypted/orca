@@ -16,15 +16,14 @@ import { formatAgentAwakeBatteryPercent } from './agent-awake-copy'
 type AgentAwakeBatterySettingsProps = {
   settings: GlobalSettings
   updateSettings: (updates: Partial<GlobalSettings>) => void
-  userAgent?: string
 }
 
 export function AgentAwakeBatterySettings({
   settings,
-  updateSettings,
-  userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent
+  updateSettings
 }: AgentAwakeBatterySettingsProps): React.JSX.Element {
   const t = useTranslate()
+  const userAgent = navigator.userAgent
   const policy = readComputerAwakePowerPolicy(settings)
   const onlyWhilePluggedInLabel = t(
     'auto.components.settings.AgentAwakeBatterySettings.onlyWhilePluggedIn',
