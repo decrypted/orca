@@ -46,7 +46,7 @@ import { submitFolderWorkspaceCreate } from '@/components/sidebar/workspace-crea
 import { translate } from '@/i18n/i18n'
 import {
   formatWorkspaceCreateError,
-  getWorkspaceCreateErrorToastMessage
+  getWorkspaceCreateErrorNotice
 } from '@/lib/workspace/creation/workspace-create-error-format'
 import { toast } from 'sonner'
 
@@ -209,7 +209,8 @@ export function useFolderSubmitOrchestration(input: FolderSubmitOrchestrationInp
         }
         const formattedError = formatWorkspaceCreateError(error)
         setCreateError(formattedError)
-        toast.error(getWorkspaceCreateErrorToastMessage(formattedError))
+        const notice = getWorkspaceCreateErrorNotice(formattedError)
+        toast.error(notice.title, { description: notice.description })
       } finally {
         setCreating(false)
       }

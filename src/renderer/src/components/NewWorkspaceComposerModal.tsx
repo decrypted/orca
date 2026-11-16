@@ -2,7 +2,7 @@ import type { ComposerModalData } from './new-workspace/composer/composer-modal-
 import { toast } from 'sonner'
 import {
   formatWorkspaceCreateError,
-  getWorkspaceCreateErrorToastMessage
+  getWorkspaceCreateErrorNotice
 } from '@/lib/workspace/creation/workspace-create-error-format'
 import type {
   AgentPickerDraft,
@@ -255,7 +255,9 @@ function QuickTabBody({
           linkedWorkItem: cardProps.linkedWorkItem,
           recovery: { ...quickAgentPick, agent: quickAgent, note: cardProps.note }
         }
-        toast.error(getWorkspaceCreateErrorToastMessage(formatWorkspaceCreateError(error)), {
+        const notice = getWorkspaceCreateErrorNotice(formatWorkspaceCreateError(error))
+        toast.error(notice.title, {
+          description: notice.description,
           action: {
             label: translate('auto.lib.composerCreateHandoff.reopen', 'Reopen'),
             onClick: () => {

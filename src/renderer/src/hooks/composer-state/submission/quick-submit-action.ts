@@ -8,7 +8,7 @@ import { getWorkspaceSeedName } from '@/lib/workspace/creation/new-workspace'
 import { settleComposerSubmit } from '@/lib/workspace/creation/composer-submit-cancellation'
 import {
   formatWorkspaceCreateError,
-  getWorkspaceCreateErrorToastMessage
+  getWorkspaceCreateErrorNotice
 } from '@/lib/workspace/creation/workspace-create-error-format'
 import { toast } from 'sonner'
 import { scheduleComposerCreateHandoff } from '@/lib/workspace/creation/composer-create-handoff'
@@ -198,11 +198,12 @@ export function useQuickSubmitAction(input: QuickSubmitActionInput) {
           return
         }
         const formattedError = formatWorkspaceCreateError(error)
-        if (handoff.fail(getWorkspaceCreateErrorToastMessage(formattedError))) {
+        const notice = getWorkspaceCreateErrorNotice(formattedError)
+        if (handoff.fail(notice)) {
           return
         }
         setCreateError(formattedError)
-        toast.error(getWorkspaceCreateErrorToastMessage(formattedError))
+        toast.error(notice.title, { description: notice.description })
       } finally {
         handoff.dispose()
         setCreating(false)

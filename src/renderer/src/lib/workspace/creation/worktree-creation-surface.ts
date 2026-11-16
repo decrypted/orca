@@ -4,6 +4,7 @@ import { isFolderRepo } from '../../../../../shared/repository/repo-kind'
 import type { UISlice } from '@/store/slices/ui/ui-slice-contract'
 import { toast } from 'sonner'
 import type { AppState } from '@/store/types'
+import type { WorkspaceCreateErrorNotice } from '@/lib/workspace/creation/workspace-create-error-format'
 import {
   pendingWorktreeCreationIsVisible,
   type WorktreeCreationRequest,
@@ -99,7 +100,7 @@ export function showWorktreeCreationError(
   >,
   creationId: string,
   originView: UISlice['activeView'],
-  message: string,
+  notice: WorkspaceCreateErrorNotice,
   request?: WorktreeCreationRequest
 ): void {
   const selected = isWorktreeCreationSelected(state, creationId, originView)
@@ -108,12 +109,13 @@ export function showWorktreeCreationError(
   }
   state.updatePendingWorktreeCreation(creationId, {
     status: 'error',
-    error: message,
+    error: notice.title,
+    errorHelp: notice.description,
     ...(request ? { request } : {})
   })
   if (selected) {
     state.setActiveView('terminal')
   } else {
-    toast.error(message)
+    toast.error(notice.title, { description: notice.description })
   }
 }
