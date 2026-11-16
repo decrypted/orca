@@ -6,7 +6,7 @@ export function getRuntimeOwnedSshTargetId(runtimeId: string): string {
 }
 
 /** Any target Orca created as an implementation detail; hidden from SSH-host surfaces. */
-export function isRuntimeOwnedSshTarget(target: SshTarget): boolean {
+export function isRuntimeOwnedSshTarget(target: Pick<SshTarget, 'owner'>): boolean {
   return target.owner !== undefined
 }
 

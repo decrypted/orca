@@ -31,6 +31,7 @@ import type { ManagedAccountNameSettings } from './agent-accounts/managed-accoun
 import type { NewTabMenuSettings } from './new-tab-menu/new-tab-menu-layout'
 import type { UiLanguageSettings } from './i18n/ui-language-settings'
 import type { PortDetectionSettings } from './workspace/ports/port-detection-settings'
+import type { RemoteHostAutoConnectSettings } from './remote-runtime/ssh/remote-host-auto-connect-settings'
 
 /** Settings groups owned by their feature modules and composed into GlobalSettings. */
 export type GlobalSettingsBase = AntigravityChatAuthSettings &
@@ -63,6 +64,7 @@ export type GlobalSettingsBase = AntigravityChatAuthSettings &
   WorkspaceCleanupPolicySettings &
   PRAutoRefreshSettings &
   PortDetectionSettings &
+  RemoteHostAutoConnectSettings &
   ManagedAccountNameSettings &
   NewTabMenuSettings &
   UiLanguageSettings
