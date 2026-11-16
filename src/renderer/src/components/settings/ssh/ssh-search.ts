@@ -1,13 +1,17 @@
 import { translate } from '@/i18n/i18n'
 import { translateSearchKeyword } from '../search/settings-search-keywords'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
+import { getRemoteHostAutoConnectSearchEntry } from '../remote-host-auto-connect/remote-host-auto-connect-search'
 
 export const SSH_SETTING_ANCHORS = {
   hosts: 'ssh-hosts',
   headerActions: 'ssh-host-actions'
 } as const
 
+export const SSH_REMOTE_HOST_AUTO_CONNECT_ID = 'ssh-remote-host-auto-connect'
+
 export const getSshPaneSearchEntries = createLocalizedCatalog(() => [
+  { ...getRemoteHostAutoConnectSearchEntry(), targetSectionId: SSH_REMOTE_HOST_AUTO_CONNECT_ID },
   {
     targetSectionId: SSH_SETTING_ANCHORS.hosts,
     title: translate('auto.components.settings.ssh.search.53ae83cb55', 'SSH connections'),
