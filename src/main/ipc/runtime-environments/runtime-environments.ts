@@ -1,4 +1,5 @@
 import { holdLaunchReconnectOptOuts } from '../ssh/ssh-host-user-disconnect'
+import { isRemoteHostAutoConnectEnabled } from '../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
 import { createAiVaultAssociationObserver } from '../ai-vault/ai-vault-projection-dependency'
 import { invalidateAiVaultHostLegCache } from '../ai-vault/ai-vault-host-leg-cache'
 import { registerRuntimeEnvironmentSubscriptionHandlers } from './subscriptions/runtime-environment-subscription-handlers'
@@ -229,7 +230,9 @@ export async function registerRuntimeEnvironmentHandlers(
       recordRemoteLayoutFrame(store, environmentId, method, response)
   })
   await hostInitialization
-  await holdLaunchReconnectOptOuts(store.getSshTargets?.() ?? [])
+  await holdLaunchReconnectOptOuts(store.getSshTargets?.() ?? [], {
+    autoConnect: isRemoteHostAutoConnectEnabled(store.getSettings())
+  })
   await retireStateOfRemovedEnvironments(store)
   await Promise.all(
     (await listEnvironments(getUserDataPath())).map(async (environment) => {
