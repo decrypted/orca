@@ -14,14 +14,20 @@ import { useAppStore } from '@/store/index'
 import { isPairedWebClientWindow } from '@/app-shell/chrome/desktop-window-chrome'
 import { translate } from '@/i18n/i18n'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
+import { formatMinutesDuration } from '@/i18n/ui-intl-formatters'
 import {
   getAgentAwakeLidNote,
   getAgentAwakeModeLabel,
+  getAgentAwakeTimerLabel,
   getAgentAwakeTitle
 } from '../settings/agents/behavior/agent-awake-copy'
 import {
+  COMPUTER_AWAKE_TIMER_HOURS,
   computerAwakeSettingsForMode,
+  computerAwakeSettingsForTimer,
   normalizeComputerAwakeMode,
+  readComputerAwakeSelection,
+  startComputerAwakeTimer,
   type ComputerAwakeStatus
 } from '../../../../shared/app-lifecycle/computer-awake-mode'
 import { STATUS_BAR_CONTEXT_MENU_EXEMPT_PROPS } from './composition/status-bar-context-menu-policy'
@@ -41,10 +47,9 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
   const t = useTranslate()
   const settings = useAppStore((state) => state.settings)
   const updateSettings = useAppStore((state) => state.updateSettings)
-  const configuredMode = normalizeComputerAwakeMode(
-    settings?.computerAwakeMode,
-    settings?.keepComputerAwakeWhileAgentsRun
-  )
+  const selection = readComputerAwakeSelection(settings)
+  const configuredMode = selection.mode
+  const timer = selection.timer
   const [serviceStatus, setServiceStatus] = useState<ComputerAwakeStatus>(INACTIVE_STATUS)
 
   useEffect(() => {
@@ -76,7 +81,8 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
   const active =
     serviceStatus.mode === configuredMode ? serviceStatus.active : configuredMode === 'on'
   const title = getAgentAwakeTitle(t)
-  const statusText = `${getAgentAwakeModeLabel(mode, t)} · ${activityLabel(active, t)}`
+  const modeLabel = timer ? getAgentAwakeTimerLabel(timer, t) : getAgentAwakeModeLabel(mode, t)
+  const statusText = `${modeLabel} · ${activityLabel(active, t)}`
   const ariaLabel = t(
     'auto.components.status.bar.CaffeinateStatusSegment.ariaLabel',
     '{{title}}, {{status}}',
@@ -85,6 +91,12 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
 
   const setMode = (nextMode: string): void => {
     void updateSettings(computerAwakeSettingsForMode(normalizeComputerAwakeMode(nextMode)))
+  }
+
+  const startTimer = (hours: number): void => {
+    void updateSettings(
+      computerAwakeSettingsForTimer(startComputerAwakeTimer(selection, hours, Date.now()))
+    )
   }
 
   return (
@@ -99,7 +111,7 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
               aria-label={ariaLabel}
             >
               <Coffee className={`size-3 ${active ? 'text-foreground' : ''}`} />
-              <span className="text-[11px] font-medium">{getAgentAwakeModeLabel(mode, t)}</span>
+              <span className="text-[11px] font-medium">{modeLabel}</span>
               <span
                 aria-hidden
                 className={`size-1.5 rounded-full ${
@@ -125,7 +137,7 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
           <span className="font-normal text-muted-foreground">{statusText}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup value={mode} onValueChange={setMode}>
+        <DropdownMenuRadioGroup value={timer ? '' : mode} onValueChange={setMode}>
           <DropdownMenuRadioItem value="on" className="py-1.5">
             <span className="flex flex-col">
               <span>{getAgentAwakeModeLabel('on', t)}</span>
@@ -159,6 +171,22 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
               </span>
             </span>
           </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>
+          {t('auto.components.status.bar.CaffeinateStatusSegment.timerHeading', 'Keep awake for')}
+        </DropdownMenuLabel>
+        {/* onSelect, not onValueChange, so picking the running duration restarts it. */}
+        <DropdownMenuRadioGroup value={timer ? String(timer.hours) : ''}>
+          {COMPUTER_AWAKE_TIMER_HOURS.map((hours) => (
+            <DropdownMenuRadioItem
+              key={hours}
+              value={String(hours)}
+              onSelect={() => startTimer(hours)}
+            >
+              {formatMinutesDuration(hours * 60)}
+            </DropdownMenuRadioItem>
+          ))}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>

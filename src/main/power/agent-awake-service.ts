@@ -2,11 +2,13 @@ import { powerMonitor, powerSaveBlocker } from 'electron'
 import {
   normalizeComputerAwakeMode,
   type ComputerAwakeMode,
-  type ComputerAwakeStatus
+  type ComputerAwakeStatus,
+  type ComputerAwakeTimer
 } from '../../shared/app-lifecycle/computer-awake-mode'
 import { LinuxLidSleepAssertion } from './linux-lid-sleep-assertion'
 import { MacosSystemSleepAssertion } from './macos-system-sleep-assertion'
 import { AgentAwakeStatusLease, type AgentAwakeStatus } from './agent-awake-status-lease'
+import { ComputerAwakeTimerLease } from './computer-awake-timer-lease'
 
 /** A pane working on a WSL host, stamped with this machine's receipt time, never the host's clock. */
 export type WslHostAwakeStatus = { paneKey: string; receivedAt: number }
@@ -36,12 +38,15 @@ type AgentAwakeServiceOptions = {
   logger?: Logger
   macosAssertion?: PlatformAwakeAssertion
   now?: () => number
+  /** Persists the mode a timed On returned to, so every window and the next launch agree. */
+  onTimerExpired?: (resumeMode: ComputerAwakeMode) => void
   platform?: NodeJS.Platform
   powerMonitor?: PowerMonitorEventSource | null
 }
 
 export class AgentAwakeService {
   private mode: ComputerAwakeMode = 'off'
+  private readonly onTimerExpired: ((resumeMode: ComputerAwakeMode) => void) | null
   private blockerId: number | null = null
   private readonly statusListeners = new Set<(status: ComputerAwakeStatus) => void>()
   private lastPublishedStatus: ComputerAwakeStatus | null = null
@@ -55,16 +60,19 @@ export class AgentAwakeService {
   // Why separate: WSL-host agents report through their host's session stream, not the local hook server.
   private readonly wslHostStatusLease: AgentAwakeStatusLease
   private readonly wslHostKeysByEnvironment = new Map<string, string[]>()
+  private readonly timerLease: ComputerAwakeTimerLease
   private readonly unsubscribeResume: (() => void) | null
 
   constructor(options: AgentAwakeServiceOptions = {}) {
     this.blocker = options.blocker ?? powerSaveBlocker
     this.logger = options.logger ?? console
     this.now = options.now ?? Date.now
+    this.onTimerExpired = options.onTimerExpired ?? null
     this.statusLease = new AgentAwakeStatusLease(this.now, () => this.refresh('stale-expiry'))
     this.wslHostStatusLease = new AgentAwakeStatusLease(this.now, () =>
       this.refresh('stale-expiry')
     )
+    this.timerLease = new ComputerAwakeTimerLease(this.now, () => this.refresh('timer-expiry'))
     // Preventing Windows lid sleep requires changing the user’s global power plan.
     this.linuxAssertion =
       options.linuxAssertion ??
@@ -83,7 +91,10 @@ export class AgentAwakeService {
     this.platform = options.platform ?? process.platform
     const resumeSource = options.powerMonitor === undefined ? powerMonitor : options.powerMonitor
     if (resumeSource) {
-      const onResume = () => this.refresh('power-resume')
+      const onResume = () => {
+        this.refresh('power-resume')
+        this.timerLease.reschedule()
+      }
       resumeSource.on('resume', onResume)
       this.unsubscribeResume = () => resumeSource.off('resume', onResume)
     } else {
@@ -95,12 +106,19 @@ export class AgentAwakeService {
     this.setMode(enabled ? 'auto' : 'off')
   }
 
-  setMode(mode: ComputerAwakeMode): void {
+  setMode(mode: ComputerAwakeMode, timer: ComputerAwakeTimer | null = null): void {
     const normalized = normalizeComputerAwakeMode(mode)
-    if (this.mode === normalized) {
+    const nextTimer = normalized === 'on' ? timer : null
+    const currentTimer = this.timerLease.get()
+    if (
+      this.mode === normalized &&
+      currentTimer?.until === nextTimer?.until &&
+      currentTimer?.resumeMode === nextTimer?.resumeMode
+    ) {
       return
     }
     this.mode = normalized
+    this.timerLease.set(nextTimer)
     this.refresh('settings-change')
   }
 
@@ -173,6 +191,7 @@ export class AgentAwakeService {
   }
 
   dispose(): void {
+    this.timerLease.dispose()
     this.statusLease.dispose()
     this.wslHostStatusLease.dispose()
     this.unsubscribeResume?.()
@@ -182,6 +201,11 @@ export class AgentAwakeService {
   }
 
   private refresh(reason: string): void {
+    const resumeMode = this.timerLease.takeExpired()
+    if (resumeMode) {
+      this.mode = resumeMode
+      this.onTimerExpired?.(resumeMode)
+    }
     const runningStatusCount = this.getEligibleRunningStatusCount()
     this.applyAwakeDecision(reason, runningStatusCount)
   }

@@ -4633,7 +4633,8 @@
             "ariaLabel": "{{title}}、{{status}}",
             "onDescription": "このコンピュータを常にスリープさせない",
             "autoDescription": "Agent の作業中はスリープさせない",
-            "offDescription": "通常のシステムスリープを許可する"
+            "offDescription": "通常のシステムスリープを許可する",
+            "timerHeading": "スリープさせない時間"
           },
           "StatusBar": {
             "9659e38343": "ポート",
@@ -11336,12 +11337,14 @@
           "modeDescriptionDefault": "[オン]、[Agent]、または [オフ] を選択します。Agent が動作している間、Agent モードは起動したままになります。 Orca はまた、電源ポリシーに従って、蓋が閉じられているときにこのデバイスが起動したままになるように要求します。",
           "lidNoteMac": "蓋を開けたままアイドルスリープを防止します。蓋を閉じると、この Mac はスリープします。",
           "lidNoteWindows": "蓋を閉じる動作は、このデバイスの電源設定に従います。",
-          "lidNoteDefault": "Orca はまた、電源ポリシーに従って、蓋が閉じられているときにデバイスが起動したままになるようにこのデバイスに要求します。"
+          "lidNoteDefault": "Orca はまた、電源ポリシーに従って、蓋が閉じられているときにデバイスが起動したままになるようにこのデバイスに要求します。",
+          "timerUntil": "{{time}} まで"
         },
         "AgentAwakeSetting": {
           "on": "オン",
           "auto": "Agent",
-          "off": "オフ"
+          "off": "オフ",
+          "timerActive": "{{until}}、その後 {{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "このランタイムの GitHub CLI はアカウントバインディングには古すぎます (gh ≥ 2.40 が必要です)。",
