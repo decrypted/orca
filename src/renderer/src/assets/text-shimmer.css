@@ -59,7 +59,7 @@
     animation-direction: reverse;
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  @variant motion-reduce {
     animation: none;
     background-image: none;
     -webkit-text-fill-color: currentColor;
@@ -108,8 +108,8 @@
 
 /* Kept for backwards compatibility. Unlayered, so it still wins over other
    utilities on a plain .shimmer element. Variants are handled in the utility. */
-@media (prefers-reduced-motion: reduce) {
-  .shimmer {
+.shimmer {
+  @variant motion-reduce {
     animation: none;
     background-image: none;
     -webkit-text-fill-color: currentColor;

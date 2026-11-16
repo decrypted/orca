@@ -192,8 +192,8 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .pane-focus-rim-flash::before {
+.pane-focus-rim-flash::before {
+  @variant motion-reduce {
     animation: none;
   }
 }

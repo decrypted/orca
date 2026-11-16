@@ -80,8 +80,12 @@
 
 /* Fade new words/blocks with opacity only, preserving line geometry. */
 @media (prefers-reduced-motion: no-preference) {
-  .native-chat-markdown[data-word-fade] :is([data-word], a, :not(pre) > code),
-  .native-chat-markdown[data-block-fade] > :is(pre, div, table, hr) {
+  :where(:root:not([data-reduce-motion]))
+    .native-chat-markdown[data-word-fade]
+    :is([data-word], a, :not(pre) > code),
+  :where(:root:not([data-reduce-motion]))
+    .native-chat-markdown[data-block-fade]
+    > :is(pre, div, table, hr) {
     /* WORD_FADE_MS in use-native-chat-paced-text.ts waits this long for the last words. */
     transition: opacity 300ms ease-out;
 

@@ -6,6 +6,7 @@ import {
   type DashboardSnapshot
 } from '../../../../../shared/agent-status/presentation/dashboard-snapshot'
 import { patchDashboardSnapshotFromAgentStatus } from './dashboard-agent-status-patch'
+import { readPrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 const TOPOLOGY_REFRESH_DEBOUNCE_MS = 250
 const TOPOLOGY_REFRESH_MAX_WAIT_MS = 1_000
@@ -16,10 +17,6 @@ function columnSignature(snapshot: DashboardSnapshot): string {
     .map((card) => `${card.paneKey}:${card.bucket}`)
     .sort()
     .join(',')
-}
-
-function prefersReducedMotion(): boolean {
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 }
 
 /** Hidden-document transitions reject ready with InvalidStateError, including pop-out occlusion by the main window. */
@@ -110,7 +107,7 @@ export function useDashboardSnapshot(): DashboardSnapshot {
       if (
         !layoutChanged ||
         documentIsHidden() ||
-        prefersReducedMotion() ||
+        readPrefersReducedMotion() ||
         terminalDialogIsOpen() ||
         !startViewTransition
       ) {
