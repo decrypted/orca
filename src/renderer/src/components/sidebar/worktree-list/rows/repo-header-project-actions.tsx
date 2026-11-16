@@ -187,8 +187,8 @@ export const RepoHeaderProjectActionsMenu = React.memo(function RepoHeaderProjec
           </DropdownMenuItem>
         ) : null}
         <WslMoveProjectMenuItem repo={repo} />
-        <DropdownMenuSeparator />
         <ProjectScopeSleepMenuItem
+          leadingSeparator
           scope={{ kind: 'project', repos: hostRepos ? [...hostRepos.values()] : [repo] }}
         />
         <DropdownMenuSeparator />
