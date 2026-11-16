@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { Coffee } from 'lucide-react'
 import {
   DropdownMenu,
@@ -31,19 +30,14 @@ import {
   computerAwakeSettingsForTimer,
   normalizeComputerAwakeMode,
   readComputerAwakeSelection,
-  startComputerAwakeTimer,
-  type ComputerAwakeStatus
+  startComputerAwakeTimer
 } from '../../../../shared/app-lifecycle/computer-awake-mode'
 import {
   readComputerAwakePowerPolicy,
   type ComputerAwakePause
 } from '../../../../shared/app-lifecycle/computer-awake-power-policy'
 import { STATUS_BAR_CONTEXT_MENU_EXEMPT_PROPS } from './composition/status-bar-context-menu-policy'
-
-const INACTIVE_STATUS: ComputerAwakeStatus = {
-  mode: 'off',
-  active: false
-}
+import { getComputerAwakePowerControls, useComputerAwakeStatus } from './use-computer-awake-status'
 
 function activityLabel(
   active: boolean,
@@ -83,28 +77,8 @@ export function CaffeinateStatusSegment({
   const powerPolicy = readComputerAwakePowerPolicy(settings)
   const openSettingsTarget = useAppStore((state) => state.openSettingsTarget)
   const openSettingsPage = useAppStore((state) => state.openSettingsPage)
-  const [serviceStatus, setServiceStatus] = useState<ComputerAwakeStatus>(INACTIVE_STATUS)
-
-  useEffect(() => {
-    let mounted = true
-    const unsubscribe = window.api.agentAwake.onChanged((status) => {
-      if (mounted) {
-        setServiceStatus(status)
-      }
-    })
-    void window.api.agentAwake
-      .getStatus()
-      .then((status) => {
-        if (mounted) {
-          setServiceStatus(status)
-        }
-      })
-      .catch(() => {})
-    return () => {
-      mounted = false
-      unsubscribe()
-    }
-  }, [])
+  const serviceStatus = useComputerAwakeStatus()
+  const powerControls = getComputerAwakePowerControls(serviceStatus)
 
   if (isPairedWebClientWindow()) {
     return null
@@ -222,29 +196,39 @@ export function CaffeinateStatusSegment({
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem
-          checked={powerPolicy.onlyWhilePluggedIn}
-          onCheckedChange={(checked) =>
-            void updateSettings({ computerAwakeOnlyWhilePluggedIn: checked === true })
-          }
-        >
-          {t(
-            'auto.components.settings.AgentAwakeBatterySettings.onlyWhilePluggedIn',
-            'Only while plugged in'
-          )}
-        </DropdownMenuCheckboxItem>
-        <DropdownMenuItem
-          onSelect={() => {
-            openSettingsTarget({ pane: 'agents', repoId: null, sectionId: AGENT_AWAKE_SETTING_ID })
-            openSettingsPage()
-          }}
-        >
-          {t(
-            'auto.components.status.bar.CaffeinateStatusSegment.batterySettings',
-            'Battery and lid settings…'
-          )}
-        </DropdownMenuItem>
+        {powerControls.battery || powerControls.lid ? (
+          <>
+            <DropdownMenuSeparator />
+            {powerControls.battery ? (
+              <DropdownMenuCheckboxItem
+                checked={powerPolicy.onlyWhilePluggedIn}
+                onCheckedChange={(checked) =>
+                  void updateSettings({ computerAwakeOnlyWhilePluggedIn: checked === true })
+                }
+              >
+                {t(
+                  'auto.components.settings.AgentAwakeBatterySettings.onlyWhilePluggedIn',
+                  'Only while plugged in'
+                )}
+              </DropdownMenuCheckboxItem>
+            ) : null}
+            <DropdownMenuItem
+              onSelect={() => {
+                openSettingsTarget({
+                  pane: 'agents',
+                  repoId: null,
+                  sectionId: AGENT_AWAKE_SETTING_ID
+                })
+                openSettingsPage()
+              }}
+            >
+              {t(
+                'auto.components.status.bar.CaffeinateStatusSegment.batterySettings',
+                'Battery and lid settings…'
+              )}
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )

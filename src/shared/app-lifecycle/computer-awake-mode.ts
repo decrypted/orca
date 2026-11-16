@@ -19,6 +19,10 @@ export type ComputerAwakeStatus = {
   active: boolean
   /** Set while a wanted block is released to save the battery. */
   paused?: ComputerAwakePause
+  /** Null until known; settings hide battery options when false. */
+  hasBattery?: boolean | null
+  /** Linux with systemd-inhibit; the lid option means nothing elsewhere. */
+  lidInhibitAvailable?: boolean
 }
 
 export type ComputerAwakeSelection = {
@@ -50,7 +54,8 @@ export function normalizeComputerAwakeMode(
   return explicitMode
 }
 
-/** A timer only applies to On, so a mode written by an older build discards a leftover one. */
+/** A timer only applies to On; under any other mode it is ignored, and main clears it at startup.
+ *  Limit: an older build that switches Off and back to On before this build starts revives it. */
 export function normalizeComputerAwakeTimer(
   mode: ComputerAwakeMode,
   timer: unknown
@@ -88,8 +93,9 @@ export function startComputerAwakeTimer(
 ): ComputerAwakeTimer {
   return {
     until: now + hours * 60 * 60 * 1000,
-    // Switching durations keeps the mode from before the first timer.
-    resumeMode: current.timer?.resumeMode ?? current.mode,
+    // Switching durations keeps the mode from before the first timer; a timer on top of a
+    // permanent On would otherwise do nothing, so it ends in Off.
+    resumeMode: current.timer?.resumeMode ?? (current.mode === 'on' ? 'off' : current.mode),
     hours
   }
 }

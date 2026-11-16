@@ -1,7 +1,6 @@
 import type { GlobalSettings } from '../../../../../../shared/global-settings-types'
 import {
   COMPUTER_AWAKE_BATTERY_FLOOR_CHOICES,
-  COMPUTER_AWAKE_BATTERY_RESUME_MARGIN_PERCENT,
   readComputerAwakePowerPolicy
 } from '../../../../../../shared/app-lifecycle/computer-awake-power-policy'
 import {
@@ -12,6 +11,10 @@ import {
 import { SettingsGroupNestedRows } from '../../section-layout/SettingsGroup'
 import { useTranslate } from '../../../../i18n/use-translate'
 import { formatAgentAwakeBatteryPercent } from './agent-awake-copy'
+import {
+  getComputerAwakePowerControls,
+  useComputerAwakeStatus
+} from '../../../status-bar/use-computer-awake-status'
 
 type AgentAwakeBatterySettingsProps = {
   settings: GlobalSettings
@@ -21,9 +24,10 @@ type AgentAwakeBatterySettingsProps = {
 export function AgentAwakeBatterySettings({
   settings,
   updateSettings
-}: AgentAwakeBatterySettingsProps): React.JSX.Element {
+}: AgentAwakeBatterySettingsProps): React.JSX.Element | null {
   const t = useTranslate()
-  const userAgent = navigator.userAgent
+  const controls = getComputerAwakePowerControls(useComputerAwakeStatus())
+  const isWindows = navigator.userAgent.includes('Windows')
   const policy = readComputerAwakePowerPolicy(settings)
   const onlyWhilePluggedInLabel = t(
     'auto.components.settings.AgentAwakeBatterySettings.onlyWhilePluggedIn',
@@ -37,30 +41,40 @@ export function AgentAwakeBatterySettings({
     'auto.components.settings.AgentAwakeBatterySettings.lidLabel',
     'Closing the lid puts the computer to sleep'
   )
-  // Windows exposes no cheap charge level, and only Linux lets Orca hold a closed lid awake.
-  const showFloor = !policy.onlyWhilePluggedIn && !userAgent.includes('Windows')
-  const showLid = !userAgent.includes('Windows') && !userAgent.includes('Mac')
+  if (!controls.battery && !controls.lid) {
+    return null
+  }
+  const showFloor = controls.battery && !policy.onlyWhilePluggedIn
 
   return (
     <SettingsGroupNestedRows>
-      <SettingsSwitchRow
-        label={onlyWhilePluggedInLabel}
-        description={t(
-          'auto.components.settings.AgentAwakeBatterySettings.onlyWhilePluggedInDescription',
-          'On battery power the computer sleeps normally; keeping awake resumes when it is plugged in again.'
-        )}
-        checked={policy.onlyWhilePluggedIn}
-        onChange={() =>
-          updateSettings({ computerAwakeOnlyWhilePluggedIn: !policy.onlyWhilePluggedIn })
-        }
-      />
-      {showFloor ? (
+      {controls.battery ? (
+        <SettingsSwitchRow
+          label={onlyWhilePluggedInLabel}
+          description={t(
+            'auto.components.settings.AgentAwakeBatterySettings.onlyWhilePluggedInDescription',
+            'On battery power the computer sleeps normally; keeping awake resumes when it is plugged in again.'
+          )}
+          checked={policy.onlyWhilePluggedIn}
+          onChange={() =>
+            updateSettings({ computerAwakeOnlyWhilePluggedIn: !policy.onlyWhilePluggedIn })
+          }
+        />
+      ) : null}
+      {showFloor && isWindows ? (
+        <p data-settings-row="" className="py-3 text-xs text-muted-foreground">
+          {t(
+            'auto.components.settings.AgentAwakeBatterySettings.windowsNoFloor',
+            'Windows gives Orca no charge level, so on battery the computer stays awake with no charge limit.'
+          )}
+        </p>
+      ) : null}
+      {showFloor && !isWindows ? (
         <SettingsRow
           label={floorLabel}
           description={t(
             'auto.components.settings.AgentAwakeBatterySettings.floorDescription',
-            'Below this charge the computer sleeps normally; keeping awake resumes when it is plugged in or charged {{margin}} points above it.',
-            { margin: COMPUTER_AWAKE_BATTERY_RESUME_MARGIN_PERCENT }
+            'Below this charge the computer sleeps normally until it is plugged in again.'
           )}
           control={
             <SettingsSegmentedControl
@@ -76,7 +90,7 @@ export function AgentAwakeBatterySettings({
           }
         />
       ) : null}
-      {showLid ? (
+      {controls.lid ? (
         <SettingsSwitchRow
           label={lidLabel}
           description={t(
