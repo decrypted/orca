@@ -192,6 +192,7 @@ export type RuntimeStore = {
     sourceControlGroupOrder?: GlobalSettings['sourceControlGroupOrder']
     sourceControlCompareAgainstUpstream?: GlobalSettings['sourceControlCompareAgainstUpstream']
     prAutoRefresh?: GlobalSettings['prAutoRefresh']
+    portDetectionEnabled?: GlobalSettings['portDetectionEnabled']
     diffShowWhitespace?: GlobalSettings['diffShowWhitespace']
     newTabMenuLayout?: GlobalSettings['newTabMenuLayout']
     floatingTerminalNewTabMenuLayout?: GlobalSettings['floatingTerminalNewTabMenuLayout']
