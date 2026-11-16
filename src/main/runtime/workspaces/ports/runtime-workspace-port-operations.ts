@@ -16,12 +16,16 @@ import {
   scanWorkspacePortsOnExecutionHost,
   type WorkspacePortExecutionHostDeps
 } from '../../../ports/workspace-port-execution-host'
+import { portDetectionOffScan } from '../../../ports/port-detection-off-scan'
 import { resolveWorktreeHostRouting } from '../catalog/worktree-launch-host-repo'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host/execution-host'
 import { RuntimeWorkspaceSleepOperations } from '../sleep/runtime-workspace-sleep-operations'
 export abstract class RuntimeWorkspacePortOperations extends RuntimeWorkspaceSleepOperations {
   async scanWorkspacePorts(repoId?: string): Promise<WorkspacePortScanResult> {
-    return scanWorkspacePortProbes(await this.getWorkspacePortProbes(repoId))
+    return (
+      portDetectionOffScan(this.requireStore().getSettings()) ??
+      scanWorkspacePortProbes(await this.getWorkspacePortProbes(repoId))
+    )
   }
 
   async killWorkspacePort(args: WorkspacePortKillRequest): Promise<WorkspacePortKillResult> {
@@ -29,8 +33,17 @@ export abstract class RuntimeWorkspacePortOperations extends RuntimeWorkspaceSle
   }
 
   // Why the workspace, not a client-named host: this server resolves where the workspace runs.
-  async scanWorkspacePortsOnHost(worktreeSelector: string): Promise<WorkspacePortHostScanResult> {
+  async scanWorkspacePortsOnHost(
+    worktreeSelector: string,
+    options: { ignorePortDetectionSetting?: boolean } = {}
+  ): Promise<WorkspacePortHostScanResult> {
     const { executionHostId } = await this.resolveRuntimeFileTarget(worktreeSelector)
+    const offScan = options.ignorePortDetectionSetting
+      ? null
+      : portDetectionOffScan(this.requireStore().getSettings())
+    if (offScan) {
+      return { ...offScan, executionHostId }
+    }
     return scanWorkspacePortsOnExecutionHost(executionHostId, this.getWorkspacePortHostDeps())
   }
 
