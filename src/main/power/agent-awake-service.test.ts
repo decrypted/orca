@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AgentAwakeService } from './agent-awake-service'
-import { createLinuxPowerSupplyReader } from './power-supply-reader'
+import { createLinuxPowerSupplyReader, type PowerSupplyReader } from './power-supply-reader'
 import type { PowerSupplyState } from '../../shared/app-lifecycle/computer-awake-power-policy'
 
 vi.mock('electron', () => ({
@@ -19,7 +19,8 @@ function createAssertion() {
 
 function createService(
   clock: { now: number },
-  supply: { current: PowerSupplyState | null } = { current: null }
+  supply: { current: PowerSupplyState | null } = { current: null },
+  reader: PowerSupplyReader = { needsPolling: false, read: async () => supply.current }
 ) {
   const resumeListeners = new Set<() => void>()
   const onTimerExpired = vi.fn()
@@ -36,7 +37,7 @@ function createService(
   }
   const service = new AgentAwakeService({
     blocker,
-    powerSupplyReader: { needsPolling: false, read: async () => supply.current },
+    powerSupplyReader: reader,
     linuxAssertion: createAssertion(),
     macosAssertion: createAssertion(),
     logger: { debug: vi.fn(), warn: vi.fn() },
@@ -137,6 +138,29 @@ describe('AgentAwakeService on battery', () => {
     await vi.waitFor(() =>
       expect(service.getStatus()).toEqual({ mode: 'on', active: false, paused: 'low-battery' })
     )
+    expect(isBlocking()).toBe(false)
+    service.dispose()
+  })
+})
+
+describe('AgentAwakeService with a failing power supply read', () => {
+  it('keeps polling after a failed read and releases the block once on battery', async () => {
+    vi.useFakeTimers()
+    const read = vi
+      .fn<PowerSupplyReader['read']>()
+      .mockRejectedValueOnce(new Error('EIO'))
+      .mockResolvedValue({ onBattery: true, batteryPercent: 80 })
+    const { service, isBlocking } = createService({ now: 0 }, undefined, {
+      needsPolling: true,
+      read
+    })
+    service.setMode('on')
+    await vi.waitFor(() => expect(read).toHaveBeenCalled())
+    expect(isBlocking()).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(service.getStatus()).toEqual({ mode: 'on', active: false, paused: 'battery' })
     expect(isBlocking()).toBe(false)
     service.dispose()
   })
