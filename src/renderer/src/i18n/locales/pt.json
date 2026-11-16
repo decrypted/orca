@@ -8904,8 +8904,8 @@
           "lidNoteMac": "Impede a suspensão por inatividade com a tampa aberta; fechar a tampa ainda coloca este Mac em repouso.",
           "lidNoteDefault": "O Orca também solicita que este dispositivo permaneça ativo com a tampa fechada, conforme sua política de energia.",
           "timerUntil": "Até {{time}}",
-          "modeDescriptionLidSleeps": "Escolha Ativado, Agente ou Desativado. O modo Agente mantém o computador ativo enquanto os agentes trabalham. Fechar a tampa ainda coloca este dispositivo em repouso.",
-          "lidNoteLidSleeps": "Fechar a tampa ainda coloca este dispositivo em repouso."
+          "modeDescriptionLidSleeps": "Escolha Ativado, Agente ou Desativado. O modo Agente mantém o computador ativo enquanto os agentes trabalham. Fechar a tampa ainda coloca este dispositivo em repouso, a menos que o logind esteja configurado para respeitar bloqueios de repouso (LidSwitchIgnoreInhibited=no).",
+          "lidNoteLidSleeps": "Fechar a tampa ainda coloca este dispositivo em repouso, a menos que o logind esteja configurado para respeitar bloqueios de repouso (LidSwitchIgnoreInhibited=no)."
         },
         "providerAccountScope": {
           "remoteServer": "Servidor remoto: {{value0}}",
@@ -10230,9 +10230,10 @@
           "onlyWhilePluggedIn": "Somente quando conectado à energia",
           "onlyWhilePluggedInDescription": "Na bateria, o computador entra em repouso normalmente; volta a ficar ativo quando for conectado novamente.",
           "floorLabel": "Na bateria, pausar abaixo de",
-          "floorDescription": "Abaixo desta carga, o computador entra em repouso normalmente; volta a ficar ativo quando for conectado ou estiver {{margin}} pontos acima.",
+          "floorDescription": "Abaixo desta carga, o computador entra em repouso normalmente até ser conectado novamente.",
           "lidLabel": "Fechar a tampa coloca o computador em repouso",
-          "lidDescription": "Desativado pede a este dispositivo que fique ativo com a tampa fechada, conforme sua política de energia."
+          "lidDescription": "Desativado pede a este dispositivo que fique ativo com a tampa fechada, conforme sua política de energia.",
+          "windowsNoFloor": "O Windows não informa o nível de carga ao Orca, então na bateria o computador fica ativo sem limite de carga."
         }
       },
       "right": {
