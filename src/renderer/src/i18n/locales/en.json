@@ -926,6 +926,20 @@
         },
         "08c854149e": "Reduce visual effects"
       },
+      "reduceMotion": {
+        "title": "Reduce motion",
+        "description": "Turn off animations and transitions, such as the spinner on working agents. Follow system uses the reduced motion setting of your OS.",
+        "system": "Follow system",
+        "always": "Always",
+        "keywords": {
+          "motion": "motion",
+          "animation": "animation",
+          "spinner": "spinner",
+          "accessibility": "accessibility",
+          "performance": "performance",
+          "cpu": "cpu"
+        }
+      },
       "appIcon": {
         "importCustom": "Custom…",
         "replaceCustom": "Replace custom icon…",
