@@ -7,6 +7,7 @@ import {
 import { hostWorktreeTarget } from '../../../../../../shared/worktree/host-qualified-identity'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { collectHostTwinPurgeScopes } from '@/store/slices/worktrees/teardown/host-twin-purge-scopes'
+import { runSleepWorktrees } from './sleep-worktree-flow'
 
 /** Sleeping a workspace ID also sleeps its host twins; collect the additional hosts for confirmation. */
 export function collectTwinHostsAlsoSlept(
@@ -33,4 +34,18 @@ export function collectTwinHostsAlsoSlept(
     }
   }
   return [...alsoSlept]
+}
+
+/** Sleep from a menu: confirm first when a twin's shared id would also sleep copies the user didn't pick. */
+export function sleepWorktreesConfirmingTwins(
+  worktrees: readonly Worktree[],
+  deps: { getState: () => AppState; openModal: AppState['openModal'] }
+): void {
+  const worktreeIds = worktrees.map((worktree) => worktree.id)
+  const hostIds = collectTwinHostsAlsoSlept(deps.getState(), worktrees)
+  if (hostIds.length > 0) {
+    deps.openModal('confirm-sleep-twin', { worktreeIds, hostIds })
+    return
+  }
+  window.setTimeout(() => void runSleepWorktrees(worktreeIds), 50)
 }
