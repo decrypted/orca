@@ -1,5 +1,10 @@
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AgentAwakeService } from './agent-awake-service'
+import { readLinuxPowerSupply } from './power-supply-reader'
+import type { PowerSupplyState } from '../../shared/app-lifecycle/computer-awake-power-policy'
 
 vi.mock('electron', () => ({
   powerMonitor: { on: vi.fn(), off: vi.fn() },
@@ -12,11 +17,26 @@ function createAssertion() {
   return { start: vi.fn(), stop: vi.fn(), dispose: vi.fn() }
 }
 
-function createService(clock: { now: number }) {
+function createService(
+  clock: { now: number },
+  supply: { current: PowerSupplyState | null } = { current: null }
+) {
   const resumeListeners = new Set<() => void>()
   const onTimerExpired = vi.fn()
+  let blocking = false
+  const blocker = {
+    start: vi.fn(() => {
+      blocking = true
+      return 1
+    }),
+    stop: vi.fn(() => {
+      blocking = false
+    }),
+    isStarted: vi.fn(() => blocking)
+  }
   const service = new AgentAwakeService({
-    blocker: { start: vi.fn(() => 1), stop: vi.fn(), isStarted: vi.fn(() => true) },
+    blocker,
+    readPowerSupply: async () => supply.current,
     linuxAssertion: createAssertion(),
     macosAssertion: createAssertion(),
     logger: { debug: vi.fn(), warn: vi.fn() },
@@ -29,7 +49,7 @@ function createService(clock: { now: number }) {
     }
   })
   const emitResume = () => resumeListeners.forEach((listener) => listener())
-  return { service, onTimerExpired, emitResume }
+  return { service, onTimerExpired, emitResume, isBlocking: () => blocking }
 }
 
 afterEach(() => {
@@ -73,5 +93,87 @@ describe('AgentAwakeService timed On', () => {
     expect(service.getStatus().mode).toBe('auto')
     expect(onTimerExpired).toHaveBeenCalledWith('auto')
     service.dispose()
+  })
+})
+
+describe('AgentAwakeService on battery', () => {
+  it('releases the block on battery and takes it again on AC', async () => {
+    const supply = { current: { onBattery: true, batteryPercent: 80 } as PowerSupplyState | null }
+    const { service, emitResume, isBlocking } = createService({ now: 0 }, supply)
+    service.setPowerPolicy({
+      onlyWhilePluggedIn: true,
+      batteryFloorPercent: 50,
+      lidCloseSleeps: true
+    })
+    service.setMode('on')
+
+    await vi.waitFor(() =>
+      expect(service.getStatus()).toEqual({ mode: 'on', active: false, paused: 'battery' })
+    )
+    expect(isBlocking()).toBe(false)
+
+    supply.current = { onBattery: false, batteryPercent: 80 }
+    emitResume()
+
+    await vi.waitFor(() => expect(service.getStatus()).toEqual({ mode: 'on', active: true }))
+    expect(isBlocking()).toBe(true)
+    service.dispose()
+  })
+
+  it('keeps the block on battery above the floor and releases it below', async () => {
+    const supply = { current: { onBattery: true, batteryPercent: 60 } as PowerSupplyState | null }
+    const { service, emitResume, isBlocking } = createService({ now: 0 }, supply)
+    service.setPowerPolicy({
+      onlyWhilePluggedIn: false,
+      batteryFloorPercent: 50,
+      lidCloseSleeps: true
+    })
+    service.setMode('on')
+    await vi.waitFor(() => expect(isBlocking()).toBe(true))
+
+    supply.current = { onBattery: true, batteryPercent: 49 }
+    emitResume()
+
+    await vi.waitFor(() =>
+      expect(service.getStatus()).toEqual({ mode: 'on', active: false, paused: 'low-battery' })
+    )
+    expect(isBlocking()).toBe(false)
+    service.dispose()
+  })
+})
+
+describe('readLinuxPowerSupply', () => {
+  const roots: string[] = []
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })))
+  })
+
+  async function supplyDir(entries: Record<string, Record<string, string>>): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), 'orca-power-supply-'))
+    roots.push(root)
+    for (const [name, values] of Object.entries(entries)) {
+      await mkdir(join(root, name))
+      for (const [key, value] of Object.entries(values)) {
+        await writeFile(join(root, name, key), `${value}\n`)
+      }
+    }
+    return root
+  }
+
+  it('reads an unplugged laptop and ignores peripheral batteries', async () => {
+    const root = await supplyDir({
+      AC: { type: 'Mains', online: '0' },
+      BAT0: { type: 'Battery', capacity: '42', status: 'Discharging' },
+      hid_mouse: { type: 'Battery', scope: 'Device', capacity: '5', status: 'Discharging' }
+    })
+    await expect(readLinuxPowerSupply(root)).resolves.toEqual({
+      onBattery: true,
+      batteryPercent: 42
+    })
+  })
+
+  it('reports no battery on a desktop', async () => {
+    const root = await supplyDir({ AC: { type: 'Mains', online: '1' } })
+    await expect(readLinuxPowerSupply(root)).resolves.toBeNull()
   })
 })

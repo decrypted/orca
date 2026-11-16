@@ -1,4 +1,5 @@
 import type { GlobalSettings } from '../global-settings-types'
+import type { ComputerAwakePause } from './computer-awake-power-policy'
 
 export const COMPUTER_AWAKE_MODES = ['on', 'off', 'auto'] as const
 
@@ -16,6 +17,8 @@ export type ComputerAwakeTimer = {
 export type ComputerAwakeStatus = {
   mode: ComputerAwakeMode
   active: boolean
+  /** Set while a wanted block is released to save the battery. */
+  paused?: ComputerAwakePause
 }
 
 export type ComputerAwakeSelection = {

@@ -47,6 +47,10 @@ import {
   computerAwakeSettingsForSelection,
   readComputerAwakeSelection
 } from '../../shared/app-lifecycle/computer-awake-mode'
+import {
+  COMPUTER_AWAKE_POWER_SETTING_KEYS,
+  readComputerAwakePowerPolicy
+} from '../../shared/app-lifecycle/computer-awake-power-policy'
 import { resolveAiVaultSearchSettings } from '../../shared/ai-vault/search/ai-vault-search-settings'
 import { applySessionSearchSettingsChange } from '../ai-vault-search/session-search-enablement'
 import { getRuntimeEnvironmentRegistryRoot } from './runtime-environments/catalog/runtime-environment-registry-root'
@@ -221,6 +225,9 @@ export function registerSettingsHandlers(
     ) {
       const computerAwake = readComputerAwakeSelection(result)
       agentAwakeService?.setMode(computerAwake.mode, computerAwake.timer)
+    }
+    if (COMPUTER_AWAKE_POWER_SETTING_KEYS.some((key) => key in sanitizedArgs)) {
+      agentAwakeService?.setPowerPolicy(readComputerAwakePowerPolicy(result))
     }
     await getClaudeAgentViewService().reconcile(result)
     const hookSettingChanged =

@@ -31,6 +31,7 @@ type SystemdInhibitSpawn = (
 ) => SystemdInhibitProcess
 
 type LinuxLidSleepAssertionOptions = {
+  blocksLidSwitch?: () => boolean
   logger?: Logger
   now?: () => number
   onUnexpectedFailure?: (reason: string) => void
@@ -39,6 +40,7 @@ type LinuxLidSleepAssertionOptions = {
 }
 
 export class LinuxLidSleepAssertion {
+  private readonly blocksLidSwitch: () => boolean
   private readonly logger: Logger
   private readonly now: () => number
   private readonly onUnexpectedFailure: (reason: string) => void
@@ -57,6 +59,7 @@ export class LinuxLidSleepAssertion {
   private readonly childCleanups = new WeakMap<SystemdInhibitProcess, () => void>()
 
   constructor(options: LinuxLidSleepAssertionOptions = {}) {
+    this.blocksLidSwitch = options.blocksLidSwitch ?? (() => true)
     this.logger = options.logger ?? console
     this.now = options.now ?? Date.now
     this.onUnexpectedFailure = options.onUnexpectedFailure ?? (() => {})
@@ -76,11 +79,12 @@ export class LinuxLidSleepAssertion {
 
     let child: SystemdInhibitProcess
     try {
-      // logind may ignore sleep inhibitors for lid events; acquire both locks.
+      // logind ignores sleep locks for lid events (LidSwitchIgnoreInhibited=yes), so only
+      // handle-lid-switch keeps a closed lid awake; without it the lid still suspends.
       child = this.spawn(
         'systemd-inhibit',
         [
-          '--what=sleep:handle-lid-switch',
+          this.blocksLidSwitch() ? '--what=sleep:handle-lid-switch' : '--what=sleep',
           '--who=Orca',
           '--why=Agents are working',
           '--mode=block',

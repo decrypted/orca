@@ -5,7 +5,8 @@ import {
   getAgentAwakeModeLabel,
   getAgentAwakeSearchKeywords,
   getAgentAwakeTimerLabel,
-  getAgentAwakeTitle
+  getAgentAwakeTitle,
+  AGENT_AWAKE_SETTING_ID
 } from './agent-awake-copy'
 import { SearchableSetting } from '../../section-layout/SearchableSetting'
 import { SettingsSegmentedControl } from '../../form-controls/SettingsFormControls'
@@ -15,6 +16,8 @@ import {
   type ComputerAwakeMode
 } from '../../../../../../shared/app-lifecycle/computer-awake-mode'
 import { useTranslate } from '../../../../i18n/use-translate'
+import { readComputerAwakePowerPolicy } from '../../../../../../shared/app-lifecycle/computer-awake-power-policy'
+import { AgentAwakeBatterySettings } from './AgentAwakeBatterySettings'
 
 type AgentAwakeSettingProps = {
   settings: GlobalSettings
@@ -27,7 +30,11 @@ export function AgentAwakeSetting({
 }: AgentAwakeSettingProps): React.JSX.Element {
   const t = useTranslate()
   const title = getAgentAwakeTitle(t)
-  const description = getAgentAwakeDescription(undefined, t)
+  const description = getAgentAwakeDescription(
+    undefined,
+    t,
+    readComputerAwakePowerPolicy(settings).lidCloseSleeps
+  )
   const { mode, timer } = readComputerAwakeSelection(settings)
   const setMode = (nextMode: ComputerAwakeMode): void => {
     updateSettings(computerAwakeSettingsForMode(nextMode))
@@ -38,6 +45,7 @@ export function AgentAwakeSetting({
       title={title}
       description={description}
       keywords={getAgentAwakeSearchKeywords(undefined, t)}
+      id={AGENT_AWAKE_SETTING_ID}
     >
       <div data-settings-row="" className="flex items-start justify-between gap-4 py-3">
         <div className="min-w-0 flex-1 space-y-0.5">
@@ -77,6 +85,9 @@ export function AgentAwakeSetting({
           ]}
         />
       </div>
+      {mode !== 'off' ? (
+        <AgentAwakeBatterySettings settings={settings} updateSettings={updateSettings} />
+      ) : null}
     </SearchableSetting>
   )
 }

@@ -416,6 +416,12 @@ export type GlobalSettings = GlobalSettingsBase & {
   computerAwakeMode?: ComputerAwakeMode
   /** Set only while On runs for a chosen number of hours; older builds just see On. */
   computerAwakeTimer?: ComputerAwakeTimer | null
+  /** Releases every awake block on battery power; absent reads as on. */
+  computerAwakeOnlyWhilePluggedIn?: boolean
+  /** With blocks allowed on battery, releases them below this charge percent. */
+  computerAwakeBatteryFloorPercent?: number
+  /** Linux only: off also takes logind's lid-switch inhibitor, so a closed lid stays awake. */
+  computerAwakeLidCloseSleeps?: boolean
   /** macOS Option: auto uses keyboard layout (US → Meta, others compose); false composes; true sends Meta on both keys; left/right select one.
    * See docs/terminal-option-key-layout-aware-default.md. */
   terminalMacOptionAsAlt: 'auto' | 'true' | 'false' | 'left' | 'right'
