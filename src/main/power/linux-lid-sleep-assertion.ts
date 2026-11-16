@@ -132,6 +132,10 @@ export class LinuxLidSleepAssertion {
     this.resetRetrySuppression()
   }
 
+  isAvailable(): boolean {
+    return this.platform === 'linux' && !this.systemdInhibitUnavailable
+  }
+
   stop(_reason: string): void {
     this.resetRetrySuppression()
     if (!this.child) {
@@ -202,6 +206,8 @@ export class LinuxLidSleepAssertion {
       this.systemdInhibitUnavailable = true
       this.resetRetrySuppression()
       this.logFailure('systemd-inhibit-missing', reason, details, failureType)
+      // Lets the status republish so settings hide the lid option.
+      this.onUnexpectedFailure('linux-lid-assertion-unavailable')
       return
     }
     this.logFailure(failureKey, reason, details, failureType)

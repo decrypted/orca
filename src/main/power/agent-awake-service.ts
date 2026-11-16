@@ -11,7 +11,10 @@ import { AgentAwakeStatusLease, type AgentAwakeStatus } from './agent-awake-stat
 import { ComputerAwakeTimerLease } from './computer-awake-timer-lease'
 import { ComputerAwakePowerGate } from './computer-awake-power-gate'
 import { createPowerSupplyReader, type PowerSupplyReader } from './power-supply-reader'
-import type { ComputerAwakePowerPolicy } from '../../shared/app-lifecycle/computer-awake-power-policy'
+import type {
+  ComputerAwakePause,
+  ComputerAwakePowerPolicy
+} from '../../shared/app-lifecycle/computer-awake-power-policy'
 
 /** A pane working on a WSL host, stamped with this machine's receipt time, never the host's clock. */
 export type WslHostAwakeStatus = { paneKey: string; receivedAt: number }
@@ -26,6 +29,7 @@ type PlatformAwakeAssertion = {
   start: (reason: string) => boolean | void
   stop: (reason: string) => void
   dispose: () => void
+  isAvailable?: () => boolean
 }
 
 type PowerMonitorEventSource = {
@@ -204,9 +208,11 @@ export class AgentAwakeService {
   }
 
   getStatus(): ComputerAwakeStatus {
+    this.powerGate.primeBatteryAnswer()
     const wanted = this.isBlockWanted(this.getEligibleRunningStatusCount())
     const paused = wanted ? this.powerGate.getPause() : null
-    return { mode: this.mode, active: wanted && !paused, ...(paused ? { paused } : {}) }
+    const active = wanted && !paused && !this.powerGate.isAwaitingFirstAnswer()
+    return this.buildStatus(active, paused)
   }
 
   /** Local agents this runtime has seen working recently, independent of the awake setting.
@@ -247,7 +253,8 @@ export class AgentAwakeService {
 
   private applyAwakeDecision(reason: string, runningStatusCount: number): void {
     const paused = this.powerGate.evaluate(this.isBlockWanted(runningStatusCount))
-    const shouldBlock = this.isBlockWanted(runningStatusCount) && !paused
+    const shouldBlock =
+      this.isBlockWanted(runningStatusCount) && !paused && !this.powerGate.isAwaitingFirstAnswer()
     if (shouldBlock) {
       const macosAssertionActive = this.runAssertion('start macOS system sleep assertion', () =>
         this.macosAssertion.start(reason)
@@ -263,16 +270,23 @@ export class AgentAwakeService {
       this.runAssertion('stop macOS system sleep assertion', () => this.macosAssertion.stop(reason))
       this.runAssertion('stop Linux lid sleep assertion', () => this.linuxAssertion.stop(reason))
     }
-    this.publishStatus({ mode: this.mode, active: shouldBlock, ...(paused ? { paused } : {}) })
+    this.publishStatus(this.buildStatus(shouldBlock, paused))
+  }
+
+  private buildStatus(active: boolean, paused: ComputerAwakePause | null): ComputerAwakeStatus {
+    return {
+      mode: this.mode,
+      active,
+      ...(paused ? { paused } : {}),
+      hasBattery: this.powerGate.getHasBattery(),
+      lidInhibitAvailable:
+        this.platform === 'linux' && (this.linuxAssertion.isAvailable?.() ?? true)
+    }
   }
 
   private publishStatus(status: ComputerAwakeStatus): void {
-    const last = this.lastPublishedStatus
-    if (
-      last?.mode === status.mode &&
-      last.active === status.active &&
-      last.paused === status.paused
-    ) {
+    // buildStatus fixes the key order, so equal statuses serialize equally.
+    if (JSON.stringify(this.lastPublishedStatus) === JSON.stringify(status)) {
       return
     }
     this.lastPublishedStatus = status

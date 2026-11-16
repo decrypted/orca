@@ -12911,8 +12911,8 @@
           "lidNoteMac": "Kapak açıkken boşta uykuya geçişi önler; kapak kapatıldığında bu Mac yine uykuya geçer.",
           "lidNoteDefault": "Orca ayrıca güç ilkesinin izin verdiği ölçüde, kapak kapalıyken de bu cihazın uyanık kalmasını ister.",
           "timerUntil": "{{time}} saatine kadar",
-          "modeDescriptionLidSleeps": "Açık, Ajan veya Kapalı seçin. Ajan modu, ajanlar çalışırken uyanık kalır. Kapak kapatıldığında bu cihaz yine uykuya geçer.",
-          "lidNoteLidSleeps": "Kapak kapatıldığında bu cihaz yine uykuya geçer."
+          "modeDescriptionLidSleeps": "Açık, Ajan veya Kapalı seçin. Ajan modu, ajanlar çalışırken uyanık kalır. logind uyku kilitlerine uyacak şekilde ayarlanmadıkça (LidSwitchIgnoreInhibited=no) kapak kapatıldığında bu cihaz yine uykuya geçer.",
+          "lidNoteLidSleeps": "logind uyku kilitlerine uyacak şekilde ayarlanmadıkça (LidSwitchIgnoreInhibited=no) kapak kapatıldığında bu cihaz yine uykuya geçer."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Ajan durumu hook'ları",
@@ -15174,9 +15174,10 @@
           "onlyWhilePluggedIn": "Yalnızca prize takılıyken",
           "onlyWhilePluggedInDescription": "Pil gücündeyken bilgisayar normal şekilde uyur; yeniden prize takıldığında uyanık tutma devam eder.",
           "floorLabel": "Pildeyken şu seviyenin altında duraklat",
-          "floorDescription": "Bu şarj seviyesinin altında bilgisayar normal şekilde uyur; prize takıldığında veya {{margin}} puan üzerine çıktığında uyanık tutma devam eder.",
+          "floorDescription": "Bu şarj seviyesinin altında bilgisayar, yeniden prize takılana kadar normal şekilde uyur.",
           "lidLabel": "Kapağı kapatmak bilgisayarı uyutur",
-          "lidDescription": "Kapalıyken bu cihazdan, güç ilkesinin izin verdiği ölçüde kapak kapalıyken de uyanık kalması istenir."
+          "lidDescription": "Kapalıyken bu cihazdan, güç ilkesinin izin verdiği ölçüde kapak kapalıyken de uyanık kalması istenir.",
+          "windowsNoFloor": "Windows, Orca'ya şarj seviyesi bildirmez; bu yüzden pil gücünde bilgisayar şarj sınırı olmadan uyanık kalır."
         }
       },
       "right": {

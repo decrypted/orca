@@ -12072,8 +12072,8 @@
           "lidNoteWindows": "El comportamiento de cierre de la tapa sigue la configuración de energía de este dispositivo.",
           "lidNoteDefault": "Orca también le pide a este dispositivo que permanezca despierto cuando la tapa está cerrada, sujeto a su política de energía.",
           "timerUntil": "Hasta las {{time}}",
-          "modeDescriptionLidSleeps": "Elige Activado, Agente o Desactivado. El modo Agente se mantiene activo mientras los agentes trabajan. Al cerrar la tapa, este dispositivo se suspende igualmente.",
-          "lidNoteLidSleeps": "Al cerrar la tapa, este dispositivo se suspende igualmente."
+          "modeDescriptionLidSleeps": "Elige Activado, Agente o Desactivado. El modo Agente se mantiene activo mientras los agentes trabajan. Al cerrar la tapa, este dispositivo se suspende igualmente, salvo que logind esté configurado para respetar los bloqueos de suspensión (LidSwitchIgnoreInhibited=no).",
+          "lidNoteLidSleeps": "Al cerrar la tapa, este dispositivo se suspende igualmente, salvo que logind esté configurado para respetar los bloqueos de suspensión (LidSwitchIgnoreInhibited=no)."
         },
         "AgentAwakeSetting": {
           "on": "Activado",
@@ -14404,9 +14404,10 @@
           "onlyWhilePluggedIn": "Solo con el cargador conectado",
           "onlyWhilePluggedInDescription": "Con batería, la computadora se suspende con normalidad; se vuelve a mantener activa al conectarla de nuevo.",
           "floorLabel": "Con batería, pausar por debajo de",
-          "floorDescription": "Por debajo de esta carga, la computadora se suspende con normalidad; se vuelve a mantener activa al conectarla o al superar el umbral en {{margin}} puntos.",
+          "floorDescription": "Por debajo de esta carga, la computadora se suspende con normalidad hasta que se vuelva a conectar.",
           "lidLabel": "Cerrar la tapa suspende la computadora",
-          "lidDescription": "Desactivado pide a este dispositivo que siga activo con la tapa cerrada, según su política de energía."
+          "lidDescription": "Desactivado pide a este dispositivo que siga activo con la tapa cerrada, según su política de energía.",
+          "windowsNoFloor": "Windows no le da a Orca el nivel de carga, así que con batería la computadora se mantiene activa sin límite de carga."
         }
       },
       "right": {

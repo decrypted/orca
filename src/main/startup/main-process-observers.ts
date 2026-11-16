@@ -80,6 +80,9 @@ export function initializeMainProcessObservers(store: Store): void {
   })
   state.agentAwakeService.setPowerPolicy(readComputerAwakePowerPolicy(store.getSettings()))
   const computerAwake = readComputerAwakeSelection(store.getSettings())
+  if (store.getSettings().computerAwakeTimer && !computerAwake.timer) {
+    store.updateSettings({ computerAwakeTimer: null })
+  }
   state.agentAwakeService.setMode(computerAwake.mode, computerAwake.timer)
   // Hydrated rows preserve UI only; only this runtime's live hook events may keep the machine awake.
   state.agentAwakeService.setStatuses([])
