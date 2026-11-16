@@ -183,7 +183,7 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
   const showOpencodeGo = visibleOpencodeGo !== null && statusBarItems.includes('opencode-go')
   const showSsh = statusBarItems.includes('ssh')
   const showResourceUsage = statusBarItems.includes('resource-usage')
-  const showPorts = statusBarItems.includes('ports')
+  const showPorts = statusBarItems.includes('ports') && settings?.portDetectionEnabled !== false
   const showGitBlame = statusBarItems.includes('git-blame')
   const showFloatingTerminalToggle =
     floatingTerminalEnabled && floatingTerminalTriggerLocation === 'status-bar'
