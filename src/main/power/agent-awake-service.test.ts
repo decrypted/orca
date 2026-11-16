@@ -99,7 +99,9 @@ describe('AgentAwakeService timed On', () => {
 
 describe('AgentAwakeService on battery', () => {
   it('releases the block on battery and takes it again on AC', async () => {
-    const supply = { current: { onBattery: true, batteryPercent: 80 } as PowerSupplyState | null }
+    const supply: { current: PowerSupplyState | null } = {
+      current: { onBattery: true, batteryPercent: 80 }
+    }
     const { service, emitResume, isBlocking } = createService({ now: 0 }, supply)
     service.setPowerPolicy({
       onlyWhilePluggedIn: true,
@@ -122,7 +124,9 @@ describe('AgentAwakeService on battery', () => {
   })
 
   it('keeps the block on battery above the floor and releases it below', async () => {
-    const supply = { current: { onBattery: true, batteryPercent: 60 } as PowerSupplyState | null }
+    const supply: { current: PowerSupplyState | null } = {
+      current: { onBattery: true, batteryPercent: 60 }
+    }
     const { service, emitResume, isBlocking } = createService({ now: 0 }, supply)
     service.setPowerPolicy({
       onlyWhilePluggedIn: false,
