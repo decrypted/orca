@@ -11,6 +11,7 @@ import {
   computerAwakeSettingsForMode,
   readComputerAwakeSelection
 } from '../../shared/app-lifecycle/computer-awake-mode'
+import { readComputerAwakePowerPolicy } from '../../shared/app-lifecycle/computer-awake-power-policy'
 import { registerSystemResumeBroadcast } from '../power/system-resume-broadcast'
 import { recordWakeSignal } from '../power/wake-signal-clock'
 import { installBackgroundRunAwakeHold } from '../power/background-run-awake-hold'
@@ -83,6 +84,7 @@ export function initializeMainProcessObservers(store: Store): void {
       store.updateSettings(computerAwakeSettingsForMode(resumeMode), { notifyListeners: true })
     }
   })
+  state.agentAwakeService.setPowerPolicy(readComputerAwakePowerPolicy(store.getSettings()))
   const computerAwake = readComputerAwakeSelection(store.getSettings())
   state.agentAwakeService.setMode(computerAwake.mode, computerAwake.timer)
   // Hydrated rows preserve UI only; only this runtime's live hook events may keep the machine awake.
