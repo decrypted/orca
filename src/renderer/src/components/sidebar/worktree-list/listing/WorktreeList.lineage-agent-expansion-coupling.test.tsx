@@ -304,6 +304,7 @@ function setAgentLineageState(options: {
     getFreshFolderWorkspacePathStatus: () => null,
     gitConflictOperationByWorktree: {},
     groupBy: 'none',
+    hiddenProjectGroupIds: [],
     hideDefaultBranchWorkspace: false,
     hostedReviewCache: {},
     issueCache: {},

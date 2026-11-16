@@ -62,6 +62,7 @@ import {
   preserveStringArrayIdentity,
   sanitizeHydratedActiveView,
   sanitizePersistedRepoIds,
+  hydrateWorkspaceNavFilterIds,
   sanitizePerWorktreePreferences,
   sanitizeWorkspaceCleanupDismissals,
   sanitizePersistedSidebarWidth,
@@ -93,7 +94,6 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
             ? listedRepoIds
             : withWslMovedRepoIds(listedRepoIds, s.wslMovedProjects)
         const validRepoHostIdentities = new Set(s.repos.map(getRepoHostIdentity))
-        const persistedFilterRepoIds = sanitizePersistedRepoIds(ui.filterRepoIds)
         const persistedAgentsFilterRepoIds = sanitizePersistedRepoIds(ui.agentsFilterRepoIds)
         // Why: pre-rename builds used sidekick* keys; read as fallback only so new pet* writes win after upgrade.
         const customPets = Array.isArray(ui.customPets)
@@ -157,11 +157,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           alwaysShowDefaultBranchWorkspace: ui.alwaysShowDefaultBranchWorkspace !== false,
           ...sanitizePerWorktreePreferences(ui),
           gitGraphFiltersByWorktree: ui.gitGraphFiltersByWorktree ?? {},
-          // Why: startup hydrates UI before repo catalogs, so defer repo-filter validation to the all-host refresh.
-          filterRepoIds:
-            validRepoIds.size === 0
-              ? persistedFilterRepoIds
-              : persistedFilterRepoIds.filter((repoId) => validRepoIds.has(repoId)),
+          ...hydrateWorkspaceNavFilterIds(ui, validRepoIds),
           agentsVisibleHostIds: preserveStringArrayIdentity(
             s.agentsVisibleHostIds,
             normalizeVisibleExecutionHostIds(ui.agentsVisibleHostIds)

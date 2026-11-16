@@ -16,6 +16,7 @@ import { getStructuredChatWorktreeIds } from '../../worktree-list/listing/visibl
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import { indexHiddenProjects } from '../../../../../../shared/project/catalog/hidden-projects'
+import { selectProjectGroupFilter } from '../../worktree-list/controls/project-group-filter-selection'
 
 type UseVisibleWorkspaceKanbanWorktreeIdsParams = {
   allWorktrees: readonly Worktree[]
@@ -51,6 +52,7 @@ export function useVisibleWorkspaceKanbanWorktreeIds({
   const visibleWorkspaceHostIds = useAppStore((s) => s.visibleWorkspaceHostIds)
   const settings = useAppStore((s) => s.settings)
   const filterRepoIds = useAppStore((s) => s.filterRepoIds)
+  const projectGroupFilter = useAppStore(selectProjectGroupFilter)
   const tabsByWorktree = useAppStore((s) => (!showSleepingWorkspaces ? s.tabsByWorktree : null))
   const ptyIdsByTabId = useAppStore((s) => (!showSleepingWorkspaces ? s.ptyIdsByTabId : null))
   const browserTabsByWorktree = useAppStore((s) =>
@@ -98,6 +100,7 @@ export function useVisibleWorkspaceKanbanWorktreeIds({
         alwaysShowDefaultBranchWorkspace,
         repoMap,
         hiddenProjects: indexHiddenProjects(repos, defaultHostId),
+        projectGroupFilter,
         workspaceHostScope,
         visibleWorkspaceHostIds,
         defaultHostId,
@@ -110,6 +113,7 @@ export function useVisibleWorkspaceKanbanWorktreeIds({
     allWorktrees,
     browserTabsByWorktree,
     filterRepoIds,
+    projectGroupFilter,
     hideDefaultBranchWorkspace,
     hideAutomationGeneratedWorkspaces,
     hideCliCreatedWorkspaces,

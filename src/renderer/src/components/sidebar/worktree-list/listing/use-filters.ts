@@ -34,6 +34,7 @@ import {
 } from '../../../../../../shared/workspace-view/workspace-creator-visibility'
 import { createSleepingSweepHiddenCheck } from './sleeping-sweep-visibility'
 import { selectFolderWorkspaces } from '@/store/workspaces/catalog/workspace-record-fields'
+import { revealInSidebarProjectGroupFilter } from '../controls/project-group-filter-selection'
 
 export type SidebarWorktreeFilters = ReturnType<typeof useSidebarWorktreeFilters>
 
@@ -133,6 +134,15 @@ export function useSidebarWorktreeFilters() {
     for (const key of activeWorkspaceRowFilterKeys(sidebarWorkspaceRowFilters(state))) {
       REVEAL_WORKSPACE[key](context)
     }
+    const workspaceScope = parseWorkspaceKey(worktree.id)
+    revealInSidebarProjectGroupFilter(
+      state,
+      workspaceScope?.type === 'folder'
+        ? selectFolderWorkspaces(state).find(
+            (candidate) => candidate.id === workspaceScope.folderWorkspaceId
+          )
+        : repo
+    )
   }, [])
 
   const clearFilters = useCallback(
