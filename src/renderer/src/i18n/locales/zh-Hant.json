@@ -4881,7 +4881,10 @@
             "onDescription": "讓這台電腦持續處於喚醒狀態",
             "autoDescription": "代理程式工作時防止電腦進入睡眠狀態",
             "offDescription": "允許正常的系統睡眠行為",
-            "timerHeading": "保持喚醒時間"
+            "timerHeading": "保持喚醒時間",
+            "pausedOnBattery": "使用電池中，已暫停",
+            "pausedLowBattery": "低於 {{percent}}，已暫停",
+            "batterySettings": "電池與螢幕蓋設定…"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "之前的連線關閉了",
@@ -11172,7 +11175,9 @@
           "lidNoteWindows": "合蓋行為遵循該裝置的電源設定。",
           "lidNoteMac": "開蓋時防止閒置休眠；合上蓋子仍會使此 Mac 進入睡眠狀態。",
           "lidNoteDefault": "Orca 也會要求此裝置在合蓋時保持喚醒狀態，實際行為取決於其電源原則。",
-          "timerUntil": "直到 {{time}}"
+          "timerUntil": "直到 {{time}}",
+          "modeDescriptionLidSleeps": "選擇開啟、代理程式或關閉。代理程式模式會在代理程式工作時保持喚醒。闔上螢幕時這台裝置仍會進入睡眠。",
+          "lidNoteLidSleeps": "闔上螢幕時這台裝置仍會進入睡眠。"
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "代理程式狀態鉤子",
@@ -13270,6 +13275,14 @@
           "shownPluginCount_one": "顯示 {{count}} 個符合的外掛，包括此外掛",
           "shownPluginCount_other": "顯示 {{count}} 個符合的外掛，包括此外掛",
           "samePublisher": "更多列為 {{value0}} 的外掛"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "僅在接上電源時",
+          "onlyWhilePluggedInDescription": "使用電池時電腦會正常睡眠；重新接上電源後會恢復保持喚醒。",
+          "floorLabel": "使用電池時，低於此電量暫停",
+          "floorDescription": "低於此電量時電腦會正常睡眠；接上電源或電量高出 {{margin}} 個百分點後會恢復保持喚醒。",
+          "lidLabel": "闔上螢幕時讓電腦進入睡眠",
+          "lidDescription": "關閉時，會在電源原則允許的範圍內要求這台裝置在闔上螢幕後保持喚醒。"
         }
       },
       "right": {

@@ -4611,7 +4611,10 @@
             "onDescription": "このコンピュータを常にスリープさせない",
             "autoDescription": "Agent の作業中はスリープさせない",
             "offDescription": "通常のシステムスリープを許可する",
-            "timerHeading": "スリープさせない時間"
+            "timerHeading": "スリープさせない時間",
+            "pausedOnBattery": "バッテリー駆動中のため一時停止",
+            "pausedLowBattery": "{{percent}} 未満のため一時停止",
+            "batterySettings": "バッテリーと蓋の設定…"
           },
           "StatusBar": {
             "9659e38343": "ポート",
@@ -11332,7 +11335,9 @@
           "lidNoteMac": "蓋を開けたままアイドルスリープを防止します。蓋を閉じると、この Mac はスリープします。",
           "lidNoteWindows": "蓋を閉じる動作は、このデバイスの電源設定に従います。",
           "lidNoteDefault": "Orca はまた、電源ポリシーに従って、蓋が閉じられているときにデバイスが起動したままになるようにこのデバイスに要求します。",
-          "timerUntil": "{{time}} まで"
+          "timerUntil": "{{time}} まで",
+          "modeDescriptionLidSleeps": "[オン]、[Agent]、または [オフ] を選択します。Agent が動作している間、Agent モードは起動したままになります。蓋を閉じるとこのデバイスはスリープします。",
+          "lidNoteLidSleeps": "蓋を閉じるとこのデバイスはスリープします。"
         },
         "AgentAwakeSetting": {
           "on": "オン",
@@ -13577,6 +13582,14 @@
           "shownPluginCount_one": "これを含む {{count}} 件の一致するプラグインを表示",
           "shownPluginCount_other": "これを含む {{count}} 件の一致するプラグインを表示",
           "samePublisher": "{{value0}} として掲載された他のプラグイン"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "電源接続時のみ",
+          "onlyWhilePluggedInDescription": "バッテリー駆動中は通常どおりスリープし、電源に接続すると再びスリープを防ぎます。",
+          "floorLabel": "バッテリー駆動時に一時停止する残量",
+          "floorDescription": "この残量を下回ると通常どおりスリープします。電源に接続するか、残量が {{margin}} ポイント上回ると再びスリープを防ぎます。",
+          "lidLabel": "蓋を閉じるとコンピュータをスリープする",
+          "lidDescription": "オフにすると、電源ポリシーの範囲内で蓋を閉じてもスリープしないようこのデバイスに要求します。"
         }
       },
       "right": {
