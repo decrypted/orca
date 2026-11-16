@@ -8,6 +8,7 @@ import {
   SshTargetManagementUnservedError
 } from '../../../../ssh/targets/ssh-target-registry'
 import { isManagedOrcadSshTarget } from '../../../../ssh/targets/ssh-target-runtime-ownership'
+import { isSshUserDisconnectedError } from '../../../../ssh/connection/ssh-user-disconnect'
 import { browseSshDirectory } from '../../../../ssh/filesystem/ssh-remote-directory-browse'
 import { defineMethod } from '../../core'
 import {
@@ -110,7 +111,11 @@ export const SSH_METHODS = [
           automatic: params.automatic === true
         })
         return { state: getPublicSshState(state) }
-      } catch {
+      } catch (error) {
+        // A hold is not a failure, and its message names only the host label summaries already show.
+        if (isSshUserDisconnectedError(error)) {
+          throw error
+        }
         const state = getRegisteredSshState(params.targetId)
         throw new Error(getPublicSshError(state?.status ?? 'error'))
       }
