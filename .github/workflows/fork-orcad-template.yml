@@ -21,7 +21,7 @@ env:
 jobs:
   # Server glibc slots are built on glibc 2.28 with gcc-toolset (static libstdc++), as upstream's floor lane.
   glibc:
-    name: slot linux-${{ matrix.arch }}-glibc
+    name: linux-${{ matrix.arch }}-glibc
     strategy:
       fail-fast: false
       matrix:
@@ -71,7 +71,7 @@ jobs:
   # The opt-in linux-x64-glibc217 slot beside the unofficial glibc-217 Node; the host fetches that Node,
   # the glibc 2.17 image only builds and smokes with it.
   glibc217:
-    name: slot linux-x64-glibc217
+    name: linux-x64-glibc217
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
@@ -109,7 +109,7 @@ jobs:
           retention-days: 3
 
   musl:
-    name: slot linux-${{ matrix.arch }}-musl
+    name: linux-${{ matrix.arch }}-musl
     strategy:
       fail-fast: false
       matrix:
@@ -157,7 +157,7 @@ jobs:
 
   # darwin and win32 slots, plus the Windows addons and CLI launchers windows-2022 builds for both arches.
   native:
-    name: slot ${{ matrix.slot }}
+    name: ${{ matrix.slot }}
     strategy:
       fail-fast: false
       matrix:
@@ -191,27 +191,10 @@ jobs:
         if: matrix.os == 'windows-2022'
         with:
           arches: x64 arm64
-      # orcad's instance lock reads a PID's creation time through it; the x64 build must answer it.
-      - name: Build the Windows process-table addons
+      - name: Build the Windows process-table and security addons
         if: matrix.os == 'windows-2022'
         shell: bash
-        run: |
-          node config/scripts/native-build/windows/build-windows-process-tree-addon.mjs --arch=x64
-          node config/scripts/native-build/windows/build-windows-process-tree-addon.mjs --arch=arm64
-          node -e "
-          const { assertWindowsProcessTreeCreationTime } = require('./config/scripts/native-build/windows/windows-process-tree-creation-time.cjs')
-          const addon = require('./.build/windows-process-tree/x64/windows-process-tree.node')
-          assertWindowsProcessTreeCreationTime({ module: addon })
-          if (addon.getProcessCreationTime(0x7ffffff0) !== undefined) throw new Error('a missing PID must read undefined')
-          "
-      # orcad's data-root privacy check fails closed without it.
-      - name: Build the Windows security addons
-        if: matrix.os == 'windows-2022'
-        shell: bash
-        run: |
-          node config/scripts/native-build/windows/build-windows-security-addon.mjs --arch=x64
-          node config/scripts/native-build/windows/build-windows-security-addon.mjs --arch=arm64
-          node -e "require('./.build/windows-security/x64/windows-security.node').currentUserSid()"
+        run: bash .github/fork-build/build-windows-orcad-addons.sh x64 arm64
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: orcad-prebuild-${{ matrix.slot }}
@@ -242,6 +225,7 @@ jobs:
           retention-days: 3
 
   template:
+    name: merge
     needs: [glibc, glibc217, musl, native]
     runs-on: ubuntu-latest
     timeout-minutes: 30
