@@ -37,6 +37,8 @@ import { retainUnretainedOrcadMigrationSources } from '../../persistence/migrati
 import { reconcileManagedOrcadSshTargets } from '../../persistence/migrating-orcad-catalog/retained-source/orcad-retained-source'
 import { installOrcadMigrationScrollbackRetention } from '../../persistence/migrating-orcad-catalog/terminal-history/orcad-migration-scrollback-retention-wiring'
 import { getAppEnvironment } from '../../../shared/app-lifecycle/app-environment'
+import { isRemoteHostAutoConnectEnabled } from '../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
+import { followRemoteHostAutoConnectSetting } from '../../ipc/ssh/remote-host-auto-connect-hold'
 import type { RegisterSshRequest } from './ssh-application-requests'
 
 /**
@@ -64,7 +66,9 @@ export async function startSshApplication({
   setPersistedStore(store)
   const ready = (async () => {
     await hostInitialization
-    await holdLaunchReconnectOptOuts(getSshTargetRegistryStore()!.listTargets())
+    await holdLaunchReconnectOptOuts(getSshTargetRegistryStore()!.listTargets(), {
+      autoConnect: isRemoteHostAutoConnectEnabled(store.getSettings())
+    })
     await reconcileManagedOrcadSshTargets(getAppEnvironment().getPath('userData'), store)
   })()
   setSshStartupReady(ready)
@@ -120,6 +124,7 @@ export async function startSshApplication({
   beforeReady?.()
 
   await ready
+  followRemoteHostAutoConnectSetting(store)
   void retainUnretainedOrcadMigrationSources(getAppEnvironment().getPath('userData'), store)
   installOrcadMigrationScrollbackRetention(getAppEnvironment().getPath('userData'), store)
   installManagedOrcadStartStatus()
