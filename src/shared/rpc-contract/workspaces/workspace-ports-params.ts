@@ -1,6 +1,11 @@
 import { z } from 'zod'
 import { lazyZodSchema } from '../../schema/lazy-zod-schema'
-import { OptionalString, requiredNumber, requiredString } from '../rpc-param-primitives'
+import {
+  OptionalBoolean,
+  OptionalString,
+  requiredNumber,
+  requiredString
+} from '../rpc-param-primitives'
 
 export const WorkspacePortScanParams = lazyZodSchema(() =>
   z.object({
@@ -26,7 +31,9 @@ export const WorkspacePortProbePageParams = lazyZodSchema(() =>
 
 export const WorkspacePortScanHostParams = lazyZodSchema(() =>
   z.object({
-    worktree: requiredString('Missing worktree selector')
+    worktree: requiredString('Missing worktree selector'),
+    /** Set by `orca ports`: an explicit request runs even when background detection is off. */
+    ignorePortDetectionSetting: OptionalBoolean
   })
 )
 
