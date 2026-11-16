@@ -10,7 +10,7 @@ export const getBackgroundActivitySearchEntry = createLocalizedCatalog(
         title: translate('settings.backgroundActivity.portDetection.title', 'Detect ports'),
         description: translate(
           'settings.backgroundActivity.portDetection.description',
-          'Check which ports your workspaces listen on, locally and on remote hosts. When off, Orca runs no port scans and hides the Ports status bar item.'
+          'Show which ports your workspaces listen on, locally and on remote hosts. When off, Orca stops checking which ports listen on this computer, also for connected clients, and hides the Ports status bar item.'
         ),
         keywords: [
           ...translateSearchKeyword(
