@@ -16,6 +16,7 @@ import { recordSshSignInRequirement } from './ssh-sign-in-requirement'
 import { restoreManagedHostPortForwards } from './ssh-managed-port-forward-restore'
 import { requestCredential } from './ssh-passphrase'
 import { broadcastSshState } from './ssh-renderer-broadcast'
+import { holdRemoteHostWhoseSessionEnded } from './remote-host-auto-connect-hold'
 
 export function handleSshConnectionStateChange(targetId: string, state: SshConnectionState): void {
   if (state.status === 'connected') {
@@ -39,6 +40,7 @@ export function handleSshConnectionStateChange(targetId: string, state: SshConne
     return
   }
   broadcastSshState(getCurrentMainWindow, targetId, state)
+  holdRemoteHostWhoseSessionEnded(targetId, state.status)
   // An explicit connect restores through its own publish; this covers a transport that recovered.
   if (state.status === 'connected') {
     void restoreManagedHostPortForwards(targetId)
