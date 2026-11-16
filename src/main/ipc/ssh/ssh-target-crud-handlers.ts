@@ -28,6 +28,7 @@ import { sshDesktopHost } from '../../ssh/application/ssh-desktop-host'
 import { runTargetLifecycle } from './ssh-target-lifecycle-queue'
 import { fingerprintRuntimeSshTarget } from '../../ssh/runtime-access/runtime-ssh-target-fingerprint'
 import { removeRegisteredSshTarget } from './ssh-session-teardown'
+import { holdIdleRemoteHosts } from './remote-host-auto-connect-hold'
 import {
   requestDesktopBrowserBridgeReconcile,
   setDesktopBrowserBridgeHostStopped
@@ -120,6 +121,7 @@ export function assertNotManagedServerHost(targetId: string): void {
 
 function addSshTarget(input: SshTargetCreateInput): SshTargetAddResult {
   const target = getSshTargetRegistryStore()!.addTarget(omitRendererSshTargetGeneration(input))
+  void holdIdleRemoteHosts([target]).catch(() => {})
   const repoReadoptions = takeRepoReadoptions()
   return { target, repoReadoptions }
 }
@@ -181,8 +183,14 @@ export function registerSshTargetCrudHandlers(handle: RegisterSshRequest): void 
   handle('ssh:removeTarget', (args: { id: string }) => removeSshTarget(args.id))
 
   handle('ssh:importConfig', async (args?: { reAdopt?: boolean }) => {
+    const known = new Set(
+      getSshTargetRegistryStore()!
+        .listTargets()
+        .map((target) => target.id)
+    )
     const { targets, repoReadoptions } =
       await getSshTargetRegistryStore()!.importFromSshConfig(args)
+    await holdIdleRemoteHosts(targets.filter((target) => !known.has(target.id)))
     return { targets, repoReadoptions: publishRepoReadoptions(repoReadoptions) }
   })
 

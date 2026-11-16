@@ -23,6 +23,7 @@ import {
 } from '../../startup/startup-diagnostics'
 import { recoverFromDegradedStartup } from '../../startup/startup-degraded-recovery'
 import { restoreSshConnectionsForStartup } from '../../startup/startup-ssh-connection-restore'
+import { isRemoteHostAutoConnectEnabled } from '../../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
 import { collectActiveWorkspaceSshTargetIds } from '../../startup/active-workspace-ssh-targets'
 import { publishTerminalViewAttributesAtAppStart } from '../../components/terminal-pane/appearance/terminal-appearance'
 import { getSystemPrefersDark } from '../../lib/terminal/appearance/terminal-theme'
@@ -236,9 +237,12 @@ export function useAppStartupHydration(onOnboardingLoaded: (state: OnboardingSta
           }
 
           // Reconnect SSH before PTY attach; defer passphrase targets to focus. Never dial runtime-owned targets here: ssh.connect would dispose the runtime’s relay.
-          const connectionIds = (sessionRead.session.activeConnectionIdsAtShutdown ?? []).filter(
-            (targetId) => !isOwnedSshTargetId(targetId)
-          )
+          // With automatic connects off, hosts live at quit wait for Connect like opted-out hosts.
+          const connectionIds = isRemoteHostAutoConnectEnabled(useAppStore.getState().settings)
+            ? (sessionRead.session.activeConnectionIdsAtShutdown ?? []).filter(
+                (targetId) => !isOwnedSshTargetId(targetId)
+              )
+            : []
           if (connectionIds.length > 0) {
             try {
               // Await only targets needed for immediately mounted panes; dead background hosts must not stall local restoration.

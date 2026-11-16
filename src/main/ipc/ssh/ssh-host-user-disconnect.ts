@@ -7,12 +7,15 @@ import {
   type KnownRuntimeEnvironment
 } from '../../../shared/remote-runtime/host-catalog/runtime-environments'
 import type { SshTarget } from '../../../shared/remote-runtime/ssh/ssh-types'
+import { REMOTE_HOST_AUTO_CONNECT_OFF_REASON } from '../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
 import {
   clearSshUserDisconnected,
   clearSshUserDisconnectedForEnvironment,
+  holdSshTargetForAutoConnectOff,
   isSshUserDisconnected,
   recordSshUserDisconnected
 } from '../../ssh/connection/ssh-user-disconnect'
+import { isRuntimeOwnedSshTarget } from '../../ssh/targets/ssh-target-runtime-ownership'
 import {
   connectRegisteredSshTarget,
   getSshTargetRegistryStore
@@ -45,9 +48,10 @@ async function environmentsReachedThrough(
 
 export async function disconnectRuntimeEnvironmentForUser(
   environmentId: string,
-  { userDataPath, invalidateTransport }: RuntimeLayer
+  { userDataPath, invalidateTransport }: RuntimeLayer,
+  reason?: string
 ): Promise<void> {
-  markRuntimeEnvironmentManuallyDisconnected(environmentId)
+  markRuntimeEnvironmentManuallyDisconnected(environmentId, reason)
   void invalidateTransport(environmentId)
   // Retain disconnected evidence for renderers that missed the teardown event.
   await getRuntimeEnvironmentStatusOwner(userDataPath, environmentId)
@@ -125,30 +129,50 @@ export async function liftUserHoldsForServerAction(
 
 let launchReconnectOptOutsHeld: Promise<void> | undefined
 
-/** Opted-out hosts start each launch as if the user had disconnected them: nothing dials them, servers included, until Connect. Once per process, before server status probes start. */
+/** Opted-out hosts, and every host while automatic connects are off, start each launch as if the user had disconnected them: nothing dials them, servers included, until Connect. Once per process, before server status probes start. */
 export async function holdLaunchReconnectOptOuts(
-  targets: readonly Pick<SshTarget, 'id' | 'label' | 'reconnectOnLaunch'>[],
+  targets: readonly Pick<SshTarget, 'id' | 'label' | 'reconnectOnLaunch' | 'owner'>[],
+  { autoConnect }: { autoConnect: boolean },
   userDataPath: string = appUserDataPath()
 ): Promise<void> {
   return (launchReconnectOptOutsHeld ??= (async () => {
-    const held = targets.filter((target) => target.reconnectOnLaunch === false)
-    held.forEach((target) => recordSshUserDisconnected(target.id))
-    if (held.length === 0) {
-      return
-    }
-    const environments = await listEnvironments(userDataPath)
-    const byTarget = new Map(held.map((target) => [target.id, target]))
-    for (const environment of environments) {
-      const targetId = getRuntimeSshAccess(environment)?.sshTargetId
-      const target = targetId ? byTarget.get(targetId) : undefined
-      if (target && isSshUserDisconnected(target.id)) {
-        markRuntimeEnvironmentManuallyDisconnected(
-          environment.id,
-          `Reconnect on launch is off for ${target.label}. Connect to resume.`
-        )
+    const reasons = new Map<string, string>()
+    for (const target of targets) {
+      if (target.reconnectOnLaunch === false) {
+        recordSshUserDisconnected(target.id)
+        reasons.set(target.id, `Reconnect on launch is off for ${target.label}. Connect to resume.`)
+      } else if (
+        !autoConnect &&
+        !isRuntimeOwnedSshTarget(target) &&
+        holdSshTargetForAutoConnectOff(target.id)
+      ) {
+        reasons.set(target.id, REMOTE_HOST_AUTO_CONNECT_OFF_REASON)
       }
     }
+    for (const { environmentId, reason } of await serversOfHeldTargets(reasons, userDataPath)) {
+      markRuntimeEnvironmentManuallyDisconnected(environmentId, reason)
+    }
   })())
+}
+
+/** Servers reached through the given held hosts that are not held yet, each with its host's reason. */
+export async function serversOfHeldTargets(
+  reasons: ReadonlyMap<string, string>,
+  userDataPath: string
+): Promise<{ environmentId: string; reason: string }[]> {
+  if (reasons.size === 0) {
+    return []
+  }
+  return (await listEnvironments(userDataPath)).flatMap((environment) => {
+    const targetId = getRuntimeSshAccess(environment)?.sshTargetId
+    const reason = targetId === undefined ? undefined : reasons.get(targetId)
+    return reason !== undefined &&
+      targetId !== undefined &&
+      isSshUserDisconnected(targetId) &&
+      !isRuntimeEnvironmentManuallyDisconnected(environment.id)
+      ? [{ environmentId: environment.id, reason }]
+      : []
+  })
 }
 
 /** Stop and remove persists across reloads and restarts: automatic dials must not deploy a new server. */
