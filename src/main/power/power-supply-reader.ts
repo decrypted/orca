@@ -84,7 +84,7 @@ export function createLinuxPowerSupplyReader(root: string): PowerSupplyReader {
         names = await readdir(root)
       } catch (error) {
         // No power_supply class at all (VMs, containers) is a positive "no battery".
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
           return null
         }
         throw error

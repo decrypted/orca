@@ -14,15 +14,11 @@ type ComputerAwakePowerSettings = Pick<
   | 'computerAwakeLidCloseSleeps'
 >
 
-export const DEFAULT_COMPUTER_AWAKE_POWER_SETTINGS = {
-  computerAwakeOnlyWhilePluggedIn: true,
-  computerAwakeBatteryFloorPercent: DEFAULT_COMPUTER_AWAKE_BATTERY_FLOOR_PERCENT,
-  computerAwakeLidCloseSleeps: true
-} satisfies Required<ComputerAwakePowerSettings>
-
-export const COMPUTER_AWAKE_POWER_SETTING_KEYS = Object.keys(
-  DEFAULT_COMPUTER_AWAKE_POWER_SETTINGS
-) as (keyof ComputerAwakePowerSettings)[]
+export const COMPUTER_AWAKE_POWER_SETTING_KEYS: readonly (keyof ComputerAwakePowerSettings)[] = [
+  'computerAwakeOnlyWhilePluggedIn',
+  'computerAwakeBatteryFloorPercent',
+  'computerAwakeLidCloseSleeps'
+]
 
 export type ComputerAwakePowerPolicy = {
   onlyWhilePluggedIn: boolean

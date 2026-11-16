@@ -32,7 +32,7 @@ type ComputerAwakeSettings = Pick<
 >
 
 function isComputerAwakeMode(mode: unknown): mode is ComputerAwakeMode {
-  return COMPUTER_AWAKE_MODES.includes(mode as ComputerAwakeMode)
+  return COMPUTER_AWAKE_MODES.some((candidate) => candidate === mode)
 }
 
 export function normalizeComputerAwakeMode(
@@ -58,7 +58,9 @@ export function normalizeComputerAwakeTimer(
   if (mode !== 'on' || typeof timer !== 'object' || timer === null) {
     return null
   }
-  const { until, resumeMode, hours } = timer as Partial<Record<keyof ComputerAwakeTimer, unknown>>
+  const until = 'until' in timer ? timer.until : undefined
+  const resumeMode = 'resumeMode' in timer ? timer.resumeMode : undefined
+  const hours = 'hours' in timer ? timer.hours : undefined
   if (typeof until !== 'number' || !Number.isFinite(until)) {
     return null
   }
