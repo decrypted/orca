@@ -7179,6 +7179,13 @@
           "selectedProjects_one": "{{count}} project",
           "selectedProjects_other": "{{count}} projects"
         },
+        "SidebarProjectGroupFilterSection": {
+          "projectGroups": "Project groups",
+          "allGroups": "All groups",
+          "shownOfTotal": "{{shown}} of {{total}}",
+          "showAll": "Show all",
+          "ungrouped": "Ungrouped"
+        },
         "SidebarSettingsHelpMenu": {
           "ad3d3ed7f1": "Restart Orca",
           "29c56f30ee": "Check for Updates",

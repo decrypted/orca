@@ -38,6 +38,8 @@ import { SidebarGroupByToggle } from './SidebarGroupByToggle'
 import { withoutHiddenRepos } from '../../../../../../shared/project/catalog/hidden-projects'
 import { selectDrawsNewWorktreeCards } from '@/store/appearance/worktree-card-style'
 import { trackWorktreeCardStyleChanged } from '../../workspace-card/template/worktree-card-style-telemetry'
+import { SidebarProjectGroupFilterSection } from './SidebarProjectGroupFilterSection'
+import { selectProjectGroupFilter } from './project-group-filter-selection'
 
 export function useWorkspaceOptionsFilterBadge(): {
   hasAnyFilter: boolean
@@ -45,14 +47,15 @@ export function useWorkspaceOptionsFilterBadge(): {
 } {
   const filterState = useAppStore(useShallow(selectSidebarFilterState))
   const repos = useAppStore((s) => s.repos)
+  const projectGroupFilterActive = useAppStore((s) => selectProjectGroupFilter(s).active)
   const activeFilterCount = useMemo(
     () =>
       countActiveWorkspaceFilters(
         sidebarWorkspaceRowFilters(filterState),
         // A filter id with no listed copy filters nothing, so it does not count.
         withoutHiddenRepos(repos).map((repo) => repo.id)
-      ),
-    [filterState, repos]
+      ) + (projectGroupFilterActive ? 1 : 0),
+    [filterState, projectGroupFilterActive, repos]
   )
   return {
     hasAnyFilter: activeFilterCount > 0,
@@ -326,7 +329,8 @@ export function WorkspaceOptionsMenuItems({
   const runtimeEnvironmentCount = useAppStore((s) => s.runtimeEnvironments.length)
   const runtimeEnvironmentCatalogHydrated = useAppStore((s) => s.runtimeEnvironmentCatalogHydrated)
   const { hostOptions } = useSidebarHostScopeOptions()
-  const sections = getShownWorkspaceViewSections({
+  const hasProjectGroups = useAppStore((s) => s.projectGroups.length > 0)
+  const shownSections = getShownWorkspaceViewSections({
     groupBy,
     hideSleepingWorkspaces: !showSleepingWorkspaces,
     hideWorkspacesFromOtherDevices,
@@ -335,6 +339,11 @@ export function WorkspaceOptionsMenuItems({
     projectCount: repoCount,
     mayHaveServerHosts: !runtimeEnvironmentCatalogHydrated || runtimeEnvironmentCount > 0
   })
+  // The group filter is desktop-only, so it is not in the shared option table the phone renders.
+  const sections: ReturnType<typeof getShownWorkspaceViewSections> =
+    hasProjectGroups && shownSections[0]?.section !== 'show'
+      ? [{ section: 'show' as const, options: [] }, ...shownSections]
+      : shownSections
 
   return (
     <>
@@ -365,6 +374,11 @@ export function WorkspaceOptionsMenuItems({
               </Fragment>
             )
           })}
+          {section === 'show' && (
+            <SidebarProjectGroupFilterSection
+              preserveWorkspaceBoardOpen={preserveWorkspaceBoardOpen}
+            />
+          )}
         </Fragment>
       ))}
     </>

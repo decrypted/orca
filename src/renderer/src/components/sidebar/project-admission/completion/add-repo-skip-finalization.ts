@@ -5,14 +5,20 @@ import {
   revealRepoInProjectFilter,
   type ProjectFilterRevealState
 } from '../../worktree-list/controls/project-filter-reveal'
+import {
+  revealInSidebarProjectGroupFilter,
+  type ProjectGroupFilterRevealState
+} from '../../worktree-list/controls/project-group-filter-selection'
 
-export type AddRepoSkipFinalizationState = ProjectFilterRevealState & {
+type SidebarFilterRevealState = ProjectFilterRevealState & ProjectGroupFilterRevealState
+
+export type AddRepoSkipFinalizationState = SidebarFilterRevealState & {
   activeRepoId: string | null
   showActiveOnly: boolean
   hideDefaultBranchWorkspace: boolean
   showSleepingWorkspaces: boolean
   alwaysShowDefaultBranchWorkspace: boolean
-  repos: readonly Pick<Repo, 'id' | 'kind'>[]
+  repos: readonly Pick<Repo, 'id' | 'kind' | 'projectGroupId'>[]
   worktreesByRepo: Record<string, Worktree[]>
   setActiveRepo: (repoId: string | null) => void
   setShowActiveOnly: (value: boolean) => void
@@ -34,6 +40,7 @@ export function finalizeImportedRepoAfterSkip(
     state.setActiveRepo(importedRepoId)
   }
   revealRepoInProjectFilter(state, importedRepoId)
+  revealInSidebarProjectGroupFilter(state, importedRepo)
   if (state.showActiveOnly) {
     state.setShowActiveOnly(false)
   }
