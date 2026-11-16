@@ -36,6 +36,7 @@ import { useWorkspaceOptionsFilterBadge } from './workspace-options-menu-items'
 import { useTranslate } from '@/i18n/use-translate'
 import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
 import { withoutHiddenRepos } from '../../../../../../shared/project/catalog/hidden-projects'
+import { SidebarProjectGroupFilterSection } from './SidebarProjectGroupFilterSection'
 
 type SidebarFilterProps = {
   preserveWorkspaceBoardOpen?: boolean
@@ -75,6 +76,7 @@ const SidebarFilter = React.memo(function SidebarFilter({
   const allRepos = useAppStore((s) => s.repos)
   const repos = useMemo(() => withoutHiddenRepos(allRepos), [allRepos])
   const addRepo = useAppStore((s) => s.addRepo)
+  const hasProjectGroups = useAppStore((s) => s.projectGroups.length > 0)
 
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -234,6 +236,15 @@ const SidebarFilter = React.memo(function SidebarFilter({
           checked={hideDetachedHeadWorkspaces}
           onChange={setHideDetachedHeadWorkspaces}
         />
+
+        {hasProjectGroups && (
+          <>
+            <DropdownMenuSeparator />
+            <SidebarProjectGroupFilterSection
+              preserveWorkspaceBoardOpen={preserveWorkspaceBoardOpen}
+            />
+          </>
+        )}
 
         {canFilterRepos && (
           <>
