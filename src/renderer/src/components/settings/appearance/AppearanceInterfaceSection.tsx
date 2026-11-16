@@ -5,6 +5,8 @@ import { UIZoomControl } from './UIZoomControl'
 import { SearchableSetting } from '../section-layout/SearchableSetting'
 import { ReduceVisualEffectsSetting } from './ReduceVisualEffectsSetting'
 import { getReduceVisualEffectsEntries } from './appearance-reduce-visual-effects-search'
+import { ReduceMotionSetting } from './ReduceMotionSetting'
+import { getReduceMotionEntries } from './appearance-reduce-motion-search'
 import { SettingsGroupDisclosure } from '../section-layout/SettingsGroupDisclosure'
 import { SettingsSearchableSelect } from '../form-controls/SettingsSearchableSelect'
 import { useAppStore } from '../../../store/index'
@@ -103,9 +105,11 @@ export function AppearanceInterfaceSection({
   const typographyEntry = getTypographyEntries()[0]
   const zoomEntry = getZoomEntries()[0]
   const reduceVisualEffectsEntry = getReduceVisualEffectsEntries()[0]
+  const reduceMotionEntry = getReduceMotionEntries()[0]
   const advancedEntries = [
     ...getTitlebarEntries(),
     ...getReduceVisualEffectsEntries(),
+    ...getReduceMotionEntries(),
     ...getSystemTrayEntries({ showSystemTray: isDesktopWindows }),
     ...getMenuBarIconEntries({ showMenuBarIcon: isDesktopMac })
   ]
@@ -311,6 +315,12 @@ export function AppearanceInterfaceSection({
           <ReduceVisualEffectsSetting
             entry={reduceVisualEffectsEntry}
             enabled={settings.reduceVisualEffects === true}
+            updateSettings={updateSettings}
+          />
+
+          <ReduceMotionSetting
+            entry={reduceMotionEntry}
+            preference={settings.reduceMotion === 'always' ? 'always' : 'system'}
             updateSettings={updateSettings}
           />
 

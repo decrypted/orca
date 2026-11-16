@@ -20,6 +20,7 @@ import { setReactCommitCascadeRendererSurface } from './diagnostics/react-commit
 import { installOsFileDropCancellationGuard } from './lib/files/drop/os-file-drop-cancellation-guard'
 import { installBodyOverlayAttributes } from './lib/overlay-interaction/body-overlay-attributes'
 import { useReduceVisualEffects } from './hooks/use-reduce-visual-effects'
+import { useReduceMotionSetting } from './hooks/usePrefersReducedMotion'
 
 const disposeOsFileDropGuard = installOsFileDropCancellationGuard()
 import.meta.hot?.dispose(disposeOsFileDropGuard)
@@ -60,6 +61,7 @@ if (!rootElement) {
 function PopoutSettingsSync(): null {
   const settings = useAppStore((state) => state.settings)
   useReduceVisualEffects(settings?.reduceVisualEffects)
+  useReduceMotionSetting(settings?.reduceMotion)
   useAppThemePaint()
 
   useEffect(() => {
