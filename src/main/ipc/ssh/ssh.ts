@@ -8,6 +8,7 @@ import {
   resetLaunchReconnectOptOutsForTests
 } from './ssh-host-user-disconnect'
 import { SshConnectionManager } from '../../ssh/connection/ssh-connection-manager'
+import { isRemoteHostAutoConnectEnabled } from '../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
 import { SshPortForwardManager } from '../../ssh/port-forwarding/ssh-port-forward'
 import { quitTeardownStartGate } from '../../startup/quit/quit-teardown-start-gate'
 import {
@@ -37,6 +38,10 @@ import { createSshConnectionCallbacks } from './ssh-connection-state-callbacks'
 import { resetSshCredentialDeclinesForTests } from '../../ssh/authentication/ssh-credential-decline'
 import { resetSshUserDisconnectsForTests } from '../../ssh/connection/ssh-user-disconnect'
 import { registerSshConnectionHandlers } from './ssh-connection-handlers'
+import {
+  followRemoteHostAutoConnectSetting,
+  resetRemoteHostAutoConnectForTests
+} from './remote-host-auto-connect-hold'
 import { registerPlainSshTerminalHandlers } from './plain-ssh-terminal-handlers'
 import {
   registerPowerMonitorReconnect,
@@ -122,7 +127,9 @@ export async function registerSshHandlers(
   setPersistedStore(store)
   const ready = (async () => {
     await hostInitialization
-    await holdLaunchReconnectOptOuts(getSshTargetRegistryStore()!.listTargets())
+    await holdLaunchReconnectOptOuts(getSshTargetRegistryStore()!.listTargets(), {
+      autoConnect: isRemoteHostAutoConnectEnabled(store.getSettings())
+    })
     await reconcileManagedOrcadSshTargets(getAppEnvironment().getPath('userData'), store)
   })()
   setSshStartupReady(ready)
@@ -193,6 +200,7 @@ export async function registerSshHandlers(
   )
 
   await ready
+  followRemoteHostAutoConnectSetting(store)
   void retainUnretainedOrcadMigrationSources(getAppEnvironment().getPath('userData'), store)
   installOrcadMigrationScrollbackRetention(getAppEnvironment().getPath('userData'), store)
   installManagedOrcadStartStatus()
@@ -229,6 +237,7 @@ export async function resetSshHandlerStateForTests(): Promise<void> {
   resetSshCredentialDeclinesForTests()
   resetSshUserDisconnectsForTests()
   resetLaunchReconnectOptOutsForTests()
+  resetRemoteHostAutoConnectForTests()
   quitTeardownStartGate.resetForTests()
   resetSshShutdownDrain()
 
