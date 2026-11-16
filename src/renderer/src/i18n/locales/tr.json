@@ -5104,7 +5104,8 @@
             "ariaLabel": "{{title}}, {{status}}",
             "onDescription": "Bu bilgisayarı sürekli uyanık tut",
             "autoDescription": "Bir ajan çalışırken uyanık kal",
-            "offDescription": "Normal sistem uyku davranışına izin ver"
+            "offDescription": "Normal sistem uyku davranışına izin ver",
+            "timerHeading": "Uyanık tutma süresi"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "Önceki bağlantı kapandı",
@@ -11489,7 +11490,8 @@
           "modeDescriptionDefault": "Açık, Ajan veya Kapalı seçin. Ajan modu, ajanlar çalışırken uyanık kalır. Orca ayrıca kapak kapatıldığında, güç politikasına bağlı olarak bu cihazın uyanık kalmasını ister.",
           "lidNoteWindows": "Kapak kapatıldığındaki davranış bu cihazın güç ayarlarına bağlıdır.",
           "lidNoteMac": "Kapak açıkken boşta uykuya geçişi önler; kapak kapatıldığında bu Mac yine uykuya geçer.",
-          "lidNoteDefault": "Orca ayrıca güç ilkesinin izin verdiği ölçüde, kapak kapalıyken de bu cihazın uyanık kalmasını ister."
+          "lidNoteDefault": "Orca ayrıca güç ilkesinin izin verdiği ölçüde, kapak kapalıyken de bu cihazın uyanık kalmasını ister.",
+          "timerUntil": "{{time}} saatine kadar"
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Ajan durumu hook'ları",
@@ -12506,7 +12508,8 @@
         "AgentAwakeSetting": {
           "on": "Açık",
           "auto": "Ajan",
-          "off": "Kapalı"
+          "off": "Kapalı",
+          "timerActive": "{{until}}, ardından {{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "Bu çalışma zamanının GitHub CLI'ı hesap bağlama için çok eski (gh ≥ 2.40 gerekiyor).",
