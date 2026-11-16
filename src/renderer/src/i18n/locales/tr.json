@@ -5122,7 +5122,10 @@
             "onDescription": "Bu bilgisayarı sürekli uyanık tut",
             "autoDescription": "Bir ajan çalışırken uyanık kal",
             "offDescription": "Normal sistem uyku davranışına izin ver",
-            "timerHeading": "Uyanık tutma süresi"
+            "timerHeading": "Uyanık tutma süresi",
+            "pausedOnBattery": "Pil gücünde duraklatıldı",
+            "pausedLowBattery": "{{percent}} altında duraklatıldı",
+            "batterySettings": "Pil ve kapak ayarları…"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "Önceki bağlantı kapandı",
@@ -11505,7 +11508,9 @@
           "lidNoteWindows": "Kapak kapatıldığındaki davranış bu cihazın güç ayarlarına bağlıdır.",
           "lidNoteMac": "Kapak açıkken boşta uykuya geçişi önler; kapak kapatıldığında bu Mac yine uykuya geçer.",
           "lidNoteDefault": "Orca ayrıca güç ilkesinin izin verdiği ölçüde, kapak kapalıyken de bu cihazın uyanık kalmasını ister.",
-          "timerUntil": "{{time}} saatine kadar"
+          "timerUntil": "{{time}} saatine kadar",
+          "modeDescriptionLidSleeps": "Açık, Ajan veya Kapalı seçin. Ajan modu, ajanlar çalışırken uyanık kalır. Kapak kapatıldığında bu cihaz yine uykuya geçer.",
+          "lidNoteLidSleeps": "Kapak kapatıldığında bu cihaz yine uykuya geçer."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Ajan durumu hook'ları",
@@ -13635,6 +13640,14 @@
           "ligaturesOn": "Açık",
           "fontSmoothingGrayscale": "Gri tonlama",
           "fontSmoothingNative": "Yerel"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "Yalnızca prize takılıyken",
+          "onlyWhilePluggedInDescription": "Pil gücündeyken bilgisayar normal şekilde uyur; yeniden prize takıldığında uyanık tutma devam eder.",
+          "floorLabel": "Pildeyken şu seviyenin altında duraklat",
+          "floorDescription": "Bu şarj seviyesinin altında bilgisayar normal şekilde uyur; prize takıldığında veya {{margin}} puan üzerine çıktığında uyanık tutma devam eder.",
+          "lidLabel": "Kapağı kapatmak bilgisayarı uyutur",
+          "lidDescription": "Kapalıyken bu cihazdan, güç ilkesinin izin verdiği ölçüde kapak kapalıyken de uyanık kalması istenir."
         }
       },
       "right": {

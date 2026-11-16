@@ -6069,7 +6069,10 @@
             "onDescription": "Keep this computer awake continuously",
             "autoDescription": "Stay awake while an agent is working",
             "offDescription": "Allow normal system sleep behavior",
-            "timerHeading": "Keep awake for"
+            "timerHeading": "Keep awake for",
+            "pausedOnBattery": "Paused on battery",
+            "pausedLowBattery": "Paused below {{percent}}",
+            "batterySettings": "Battery and lid settings…"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "The previous connection closed",
@@ -12603,7 +12606,9 @@
           "lidNoteWindows": "Lid-close behavior follows this device's power settings.",
           "lidNoteMac": "Prevents idle sleep with the lid open; closing the lid still puts this Mac to sleep.",
           "lidNoteDefault": "Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
-          "timerUntil": "Until {{time}}"
+          "timerUntil": "Until {{time}}",
+          "modeDescriptionLidSleeps": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Closing the lid still puts this device to sleep.",
+          "lidNoteLidSleeps": "Closing the lid still puts this device to sleep."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agent status hooks",
@@ -14823,6 +14828,14 @@
           "cancel": "Cancel",
           "confirm": "Remove",
           "unknownHost": "Unknown host"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "Only while plugged in",
+          "onlyWhilePluggedInDescription": "On battery power the computer sleeps normally; keeping awake resumes when it is plugged in again.",
+          "floorLabel": "On battery, pause below",
+          "floorDescription": "Below this charge the computer sleeps normally; keeping awake resumes when it is plugged in or charged {{margin}} points above it.",
+          "lidLabel": "Closing the lid puts the computer to sleep",
+          "lidDescription": "Off asks this device to stay awake with the lid closed, subject to its power policy."
         }
       },
       "right": {
