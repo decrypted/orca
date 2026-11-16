@@ -36,6 +36,7 @@ vi.mock('../runtime-environments/runtime-environments', () => ({
 }))
 import type { SshConnectionStatus, SshTarget } from '../../../shared/remote-runtime/ssh/ssh-types'
 import { handleSshConnectionStateChange } from './ssh-connection-state-callbacks'
+import type { RemoteHostAutoConnectSettings } from '../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
 import { clearRuntimeEnvironmentManualDisconnect } from '../runtime-environments/connectivity/runtime-environment-manual-disconnect'
 import { isSshUserDisconnected } from '../../ssh/connection/ssh-user-disconnect'
 import { createSshIpcHarness } from './ssh-ipc-test-harness'
@@ -132,7 +133,10 @@ describe('a host whose session ends while automatic connects are off', () => {
   const harness = createSshIpcHarness(mocks)
   const { handlers } = harness
   const otherHost: SshTarget = { ...target, id: 'ssh-2', label: 'Other' }
-  type SettingsListener = (updates: object, settings: object) => void
+  type SettingsListener = (
+    updates: RemoteHostAutoConnectSettings,
+    settings: RemoteHostAutoConnectSettings
+  ) => void
   let settingsChanged: SettingsListener | undefined
 
   beforeEach(async () => {
