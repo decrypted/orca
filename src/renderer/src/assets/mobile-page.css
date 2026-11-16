@@ -1890,6 +1890,12 @@
   }
 }
 
+:root[data-reduce-motion]
+  .mobile-page-root
+  :is(.mp-network-refresh.is-spinning svg, .mp-wl-spinner, .mp-term-cursor) {
+  animation: none;
+}
+
 @media (max-width: 920px) {
   .mobile-page-root {
     --mp-flow-card-padding: 20px;
