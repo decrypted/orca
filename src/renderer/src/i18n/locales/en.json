@@ -2213,6 +2213,19 @@
           "background": "background",
           "remote": "remote"
         }
+      },
+      "remoteHostAutoConnect": {
+        "title": "Connect to remote hosts automatically",
+        "description": "Reconnect SSH hosts and the Orca servers on them at launch, and keep trying to reach them in the background. When off, Orca connects to a host only once you connect it yourself.",
+        "keywords": {
+          "ssh": "ssh",
+          "remote": "remote",
+          "reconnect": "reconnect",
+          "launch": "launch",
+          "startup": "startup",
+          "server": "server",
+          "background": "background"
+        }
       }
     }
   },
