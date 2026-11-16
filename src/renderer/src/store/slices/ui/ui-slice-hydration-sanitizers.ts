@@ -52,6 +52,22 @@ export function sanitizePersistedRepoIds(value: unknown): string[] {
   return value.filter((repoId): repoId is string => typeof repoId === 'string')
 }
 
+export function hydrateWorkspaceNavFilterIds(
+  ui: Pick<PersistedUIState, 'filterRepoIds' | 'hiddenProjectGroupIds'>,
+  validRepoIds: ReadonlySet<string>
+): { filterRepoIds: string[]; hiddenProjectGroupIds: string[] } {
+  const filterRepoIds = sanitizePersistedRepoIds(ui.filterRepoIds)
+  return {
+    // Why: startup hydrates UI before repo catalogs, so defer repo-filter validation to the all-host refresh.
+    filterRepoIds:
+      validRepoIds.size === 0
+        ? filterRepoIds
+        : filterRepoIds.filter((repoId) => validRepoIds.has(repoId)),
+    // Kept unpruned: a remote host's groups may not have loaded yet, and unlisted ids filter nothing.
+    hiddenProjectGroupIds: sanitizePersistedRepoIds(ui.hiddenProjectGroupIds)
+  }
+}
+
 export function sanitizeTrustedOrcaHooks(trust: unknown): PersistedTrustedOrcaHooks {
   if (!isPlainPersistedRecord(trust)) {
     return {}

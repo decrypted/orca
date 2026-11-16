@@ -29,6 +29,7 @@ export type PersistedUIWriteBaseline = {
   showDotfilesByWorktree: Record<string, boolean>
   notificationsMutedByWorktree: Record<string, boolean>
   filterRepoIds: readonly string[]
+  hiddenProjectGroupIds: readonly string[]
   acknowledgedAgentsByPaneKey: Record<string, number>
   activityClearedAtByPaneKey: Record<string, number>
   manuallyUnreadTurnsByPaneKey: Record<string, number>
@@ -62,6 +63,7 @@ const PERSISTED_UI_WRITE_BASELINE_FIELD_SET = {
   showDotfilesByWorktree: true,
   notificationsMutedByWorktree: true,
   filterRepoIds: true,
+  hiddenProjectGroupIds: true,
   acknowledgedAgentsByPaneKey: true,
   activityClearedAtByPaneKey: true,
   manuallyUnreadTurnsByPaneKey: true
@@ -105,7 +107,7 @@ function writeFieldEqual(field: keyof PersistedUIWriteBaseline, a: unknown, b: u
   if (field === 'gitGraphFiltersByWorktree') {
     return a === b || JSON.stringify(a) === JSON.stringify(b)
   }
-  if (field === 'filterRepoIds') {
+  if (field === 'filterRepoIds' || field === 'hiddenProjectGroupIds') {
     return stringArrayEqual(a as readonly string[], b as readonly string[])
   }
   if (field === 'visibleWorkspaceHostIds') {
@@ -156,6 +158,8 @@ export function persistedUIWriteFieldsToWireUpdate(
     } else if (field === 'filterRepoIds') {
       // Copy readonly store arrays at mutable main wire boundary; keep selector identity guarantees local.
       update.filterRepoIds = [...(fields.filterRepoIds ?? [])]
+    } else if (field === 'hiddenProjectGroupIds') {
+      update.hiddenProjectGroupIds = [...(fields.hiddenProjectGroupIds ?? [])]
     } else {
       assignSameNameWireField(
         update,
@@ -169,7 +173,7 @@ export function persistedUIWriteFieldsToWireUpdate(
 
 type SameNameWriteField = Exclude<
   keyof PersistedUIWriteBaseline,
-  'showSleepingWorkspaces' | 'filterRepoIds'
+  'showSleepingWorkspaces' | 'filterRepoIds' | 'hiddenProjectGroupIds'
 >
 
 // Compile-check nonspecial mirror fields against wire names/types so renames or drift cannot silently break persistence.

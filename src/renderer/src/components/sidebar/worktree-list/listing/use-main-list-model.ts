@@ -45,6 +45,7 @@ import type { HostSectionRow } from '../../../../../../shared/sidebar-list/hosts
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { sidebarWorkspaceRowFilters } from '../controls/sidebar-filter-actions'
+import { selectProjectGroupFilter } from '../controls/project-group-filter-selection'
 import type { SidebarListModel, SidebarListModelArgs } from './sidebar-list-model'
 import { withWindowCreations } from './window-worktree-creations'
 export { withWindowCreations } from './window-worktree-creations'
@@ -133,7 +134,8 @@ export function useMainSidebarListModel(args: SidebarListModelArgs): SidebarList
       defaultHostId,
       hostLabelOverrides: getHostDisplayLabelOverrides(settings),
       localHostLabel: getLocalExecutionHostLabel(),
-      workspaceHostOrder
+      workspaceHostOrder,
+      hiddenProjectGroupIds: filterState.hiddenProjectGroupIds
     }),
     [
       groupBy,
@@ -152,6 +154,7 @@ export function useMainSidebarListModel(args: SidebarListModelArgs): SidebarList
   const rankedIds = useOrderHeldWhileEngaged(useReusedArrayIdentity(ranked), sortBy)
   const index = useProjectRecencyHeldWhileEngaged(liveIndex, args.projectOrderBy)
 
+  const projectGroupFilter = useAppStore(selectProjectGroupFilter)
   const visibleReposForRows = useMemo(
     () =>
       filterReposForVisibleHosts(
@@ -161,8 +164,8 @@ export function useMainSidebarListModel(args: SidebarListModelArgs): SidebarList
           filterState.workspaceHostScope
         ),
         defaultHostId
-      ),
-    [repos, filterState.visibleWorkspaceHostIds, filterState.workspaceHostScope, defaultHostId]
+      ).filter((repo) => !projectGroupFilter.isRepoHidden(repo)),
+    [repos, filterState, defaultHostId, projectGroupFilter]
   )
   const externalWorktreeCards = useSidebarExternalWorktreeCards({
     repos,

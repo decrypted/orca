@@ -1,5 +1,9 @@
 import type { Repo } from '../../../../../../shared/repository/repo-types'
 import type { HiddenProjects } from '../../../../../../shared/project/catalog/hidden-projects'
+import {
+  projectGroupRowHider,
+  type ProjectGroupFilter
+} from '../../../../../../shared/project/groups/project-group-filter'
 import type { TerminalTab } from '../../../../../../shared/workspace-layout/terminal-tab-types'
 import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
@@ -34,6 +38,7 @@ export type VisibleWorktreeOptions = {
   alwaysShowDefaultBranchWorkspace?: boolean
   repoMap: Map<string, Repo>
   hiddenProjects: HiddenProjects
+  projectGroupFilter: ProjectGroupFilter
   workspaceHostScope: ExecutionHostScope
   visibleWorkspaceHostIds?: readonly ExecutionHostId[] | null
   defaultHostId: ExecutionHostId
@@ -69,7 +74,10 @@ export function computeVisibleWorktrees(
     filterRepoIds: opts.filterRepoIds,
     injectLineageAncestors: opts.injectLineageAncestors,
     preserveLineageParentOrder: opts.preserveLineageParentOrder,
-    forcedVisibleWorktreeIds: opts.forcedVisibleWorktreeIds
+    forcedVisibleWorktreeIds: opts.forcedVisibleWorktreeIds,
+    isHiddenByProjectGroup: projectGroupRowHider(opts.projectGroupFilter, (id) =>
+      opts.repoMap.get(id)
+    )
   })
 }
 

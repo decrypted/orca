@@ -74,6 +74,9 @@ export type UISlicePreferences = {
   toggleWorktreeNotificationsMuted: (worktreeId: string) => void
   filterRepoIds: readonly string[]
   setFilterRepoIds: (ids: readonly string[]) => void
+  /** Group ids (or the Ungrouped id) hidden from workspace nav; empty shows every group. */
+  hiddenProjectGroupIds: readonly string[]
+  setHiddenProjectGroupIds: (ids: readonly string[]) => void
   /** Agents-view scope filters, independent from workspace navigation filters. */
   agentsVisibleHostIds: VisibleWorkspaceHostIds
   setAgentsVisibleHostIds: (ids: VisibleWorkspaceHostIds) => void
