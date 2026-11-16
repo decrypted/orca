@@ -6,6 +6,7 @@ import { RuntimeServersPageProvider } from '../runtime-environments/runtime-serv
 import { SshPane } from '../ssh/SshPane'
 import { SshHostsHeaderSlot, SshHostsHeaderSlotProvider } from '../ssh/ssh-hosts-header-slot'
 import { SettingsSection } from '../section-layout/SettingsSection'
+import { RemoteHostAutoConnectGroup } from '../remote-host-auto-connect/RemoteHostAutoConnectSetting'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import type { SettingsRenderContext } from './settings-render-context'
@@ -39,6 +40,13 @@ export function renderServersSettingsSection(
           ) : undefined
         }
       >
+        {mounted && !model.isWebClient ? (
+          <RemoteHostAutoConnectGroup
+            settings={model.settings}
+            updateSettings={model.updateSettings}
+            id="servers-remote-host-auto-connect"
+          />
+        ) : null}
         {mounted ? (
           <RuntimeEnvironmentsPane
             settings={model.settings}
