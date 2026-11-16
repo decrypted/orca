@@ -18,6 +18,8 @@ export type ConnectAttempt = {
   promise: Promise<SshConnectionState>
   /** A retry no user asked for, while `active`: no setup progress, and refusal keeps the host. */
   quiet?: QuietConnect
+  /** No user asked for it; a user's connect joining it clears this. */
+  automatic?: boolean
 }
 
 /** A user's connect joining the attempt clears `active`, making it an ordinary connect. */
@@ -28,6 +30,11 @@ export type QuietConnect = {
 }
 
 export const connectInFlight = new Map<string, ConnectAttempt>()
+
+export function isUserConnectInFlight(targetId: string): boolean {
+  const attempt = connectInFlight.get(targetId)
+  return attempt !== undefined && attempt.automatic !== true
+}
 
 // Reuse committed-quit authority; a private latch could permanently fence connects without an actual quit.
 export function assertSshConnectsNotFenced(): void {
