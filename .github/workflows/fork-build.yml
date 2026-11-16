@@ -2,8 +2,9 @@ name: Fork build
 
 run-name: Fork build ${{ github.ref_name }}
 
-# decrypted/orca only: unsigned Linux deb + macOS arm64 dmg/zip of local/build. Every push keeps them
-# as run artifacts; a vX.Y.Z-fork.N tag also publishes them as a GitHub pre-release (never "latest").
+# decrypted/orca only: unsigned Linux deb, macOS arm64 dmg/zip and Windows x64 installer/zip of local/build.
+# Every push keeps them as run artifacts; a vX.Y.Z-fork.N tag also publishes them as a GitHub pre-release
+# (never "latest").
 on:
   push:
     branches: [local/build]
@@ -46,6 +47,7 @@ jobs:
     timeout-minutes: 10
     outputs:
       version: ${{ steps.resolve.outputs.version }}
+      win_file_version: ${{ steps.resolve.outputs.win_file_version }}
       release: ${{ steps.resolve.outputs.release }}
       donor_version: ${{ steps.resolve.outputs.donor_version }}
       donor_sha256: ${{ steps.resolve.outputs.donor_sha256 }}
@@ -90,12 +92,16 @@ jobs:
             version="$base-fork.${last:-0}.dev.$RUN_NUMBER"
             release=false
           fi
+          # Windows' numeric file version: resedit reads 262-fork as 0 (1.4.0.1), so pass X.Y.Z.<fork N> explicitly.
+          [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-fork\.([0-9]+) ]] || { echo "::error::Unexpected version '$version'"; exit 1; }
+          win_file_version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
           donor="${DONOR_OVERRIDE:-${latest#v}}"
           [[ "$donor" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Donor version '$donor' is not X.Y.Z"; exit 1; }
           digest="$(gh api "repos/stablyai/orca/releases/tags/v$donor" --jq ".assets[] | select(.name == \"orca-ide_${donor}_amd64.deb\") | .digest")"
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::No sha256 digest for orca-ide_${donor}_amd64.deb"; exit 1; }
           {
             echo "version=$version"
+            echo "win_file_version=$win_file_version"
             echo "release=$release"
             echo "donor_version=$donor"
             echo "donor_sha256=${digest#sha256:}"
@@ -104,6 +110,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           {
             echo "### Fork build $version"
+            echo "- Windows file version: $win_file_version"
             echo "- commit \`$SHA\`, release: $release"
             echo "- latest official release: $latest"
             echo "- macOS runner: $MAC_RUNNER"
@@ -121,6 +128,7 @@ jobs:
 
       # Upstream main can change a slot's files or pins before the next release ships them (e.g. #42760
       # added bin/orca-provider-exec); then every slot has to be built here (fork-orcad-template.yml).
+      # Every target is checked: each package job grafts all but its own slot, which another job builds.
       - name: Choose the orcad template source
         id: template
         env:
@@ -134,7 +142,7 @@ jobs:
             auto)
               donor="$(bash .github/fork-build/extract-orcad-donor.sh "$DONOR_VERSION" "$DONOR_SHA256" "$RUNNER_TEMP/orcad-donor")"
               status=0
-              node .github/fork-build/graft-orcad-template-targets.mjs --check "$donor" linux-x64-glibc,darwin-arm64 || status=$?
+              node .github/fork-build/graft-orcad-template-targets.mjs --check "$donor" '' || status=$?
               case "$status" in
                 0) source=graft ;;
                 3) source=full; echo "::notice::Official v$DONOR_VERSION does not fit this source; building every orcad slot (fork-orcad-template.yml)" ;;
@@ -147,6 +155,7 @@ jobs:
           echo "- orcad template: $source (mode $MODE)" >> "$GITHUB_STEP_SUMMARY"
 
   orcad-template:
+    name: remote-host server
     needs: version
     if: needs.version.outputs.orcad_template == 'full'
     uses: ./.github/workflows/fork-orcad-template.yml
@@ -184,10 +193,26 @@ jobs:
               dist/orca-macos-arm64.dmg.sha256
               dist/orca-macos-arm64.zip
               dist/orca-macos-arm64.zip.sha256
+          # windows-latest is the 2025 image, whose VS 2026 node-gyp can't detect; release-cut pins 2022.
+          - os: windows-2022
+            platform: windows-x64
+            orcad_slot: win32-x64
+            eb_cache_path: |
+              ~/AppData/Local/electron/Cache
+              ~/AppData/Local/electron-builder/Cache
+            artifacts: |
+              dist/orca-windows-setup.exe
+              dist/orca-windows-setup.exe.sha256
+              dist/orca-windows-x64.zip
+              dist/orca-windows-x64.zip.sha256
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      WIN_FILE_VERSION: ${{ needs.version.outputs.win_file_version }}
       DONOR_VERSION: ${{ needs.version.outputs.donor_version }}
       DONOR_SHA256: ${{ needs.version.outputs.donor_sha256 }}
       ORCAD_SLOT: ${{ matrix.orcad_slot }}
@@ -269,6 +294,17 @@ jobs:
         if: runner.os == 'macOS'
         run: pnpm verify:macos-entitlements
 
+      # build:release compiles the Rust CLI launcher and agent hook on Windows.
+      - name: Ensure the Rust toolchain for the Windows CLI launcher
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+            rustup toolchain install stable --profile minimal
+            rustup default stable
+          }
+          cargo --version
+
       - name: Build app
         run: pnpm run build:release
 
@@ -276,6 +312,7 @@ jobs:
         if: env.ORCAD_TEMPLATE_SOURCE == 'graft'
         run: |
           bash .github/fork-build/build-orcad-slot.sh "$ORCAD_SLOT"
+          [ "$RUNNER_OS" != Windows ] || bash .github/fork-build/build-windows-orcad-addons.sh x64
           pnpm run build:orcad-template --targets "$ORCAD_SLOT"
 
       - name: Graft the other orcad targets from the official donor release
@@ -294,8 +331,10 @@ jobs:
           name: orcad-template
           path: out/orcad-template
 
-      # #8212: Node and the exact Electron runtime must survive a native SIGSEGV in the watcher.
+      # #8212: Node and the exact Electron runtime must survive a native SIGSEGV in the watcher (POSIX
+      # signal harness; release-cut runs it on Linux only).
       - name: Gate runtime file-watcher process isolation
+        if: runner.os != 'Windows'
         run: |
           node config/scripts/diagnostics/runtime-watchers/runtime-file-watcher-fault-harness.mjs
           ELECTRON_RUN_AS_NODE=1 pnpm exec electron config/scripts/diagnostics/runtime-watchers/runtime-file-watcher-fault-harness.mjs
@@ -318,6 +357,25 @@ jobs:
           node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON config/scripts/orcad-distribution/prebuilds/pinned-node-downloads.mjs darwin-arm64 darwin-x64
           node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
           pnpm exec electron-builder --config config/electron-builder.config.cjs --mac dmg zip --arm64 --publish never -c.mac.identity=-
+
+      # No signing: the config's signtoolOptions.sign hook replaces signtool and only relays the NSIS
+      # uninstaller to SignPath when ORCA_WIN_UNINSTALLER_* is set; without it and without CSC_*/WIN_CSC_*
+      # nothing is signed. buildVersion/BUILD_NUMBER give the exe and installer a numeric X.Y.Z.N.
+      - name: Package the installer and zip
+        if: runner.os == 'Windows'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          ORCA_REUSE_PREPARED_NATIVE_RUNTIME: '1'
+        run: |
+          set -euo pipefail
+          for var in CSC_LINK CSC_KEY_PASSWORD WIN_CSC_LINK WIN_CSC_KEY_PASSWORD ORCA_WIN_UNINSTALLER_EXPORT_PATH ORCA_WIN_UNINSTALLER_SIGNED_PATH; do
+            [ -z "${!var:-}" ] || { echo "::error::$var is set; this build must stay unsigned"; exit 1; }
+          done
+          export BUILD_NUMBER="${WIN_FILE_VERSION##*.}"
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
+          # shellcheck disable=SC2016 # ${ext} is electron-builder's macro
+          pnpm exec electron-builder --config config/electron-builder.config.cjs --win nsis zip --x64 --publish never \
+            "-c.buildVersion=$WIN_FILE_VERSION" '-c.win.artifactName=orca-windows-x64.${ext}'
 
       - name: Load packaged node-pty on the Linux floor
         if: runner.os == 'Linux'
@@ -349,7 +407,47 @@ jobs:
           grep -q '^Signature=adhoc' "$RUNNER_TEMP/codesign.txt" || { echo "::error::Expected an ad-hoc signature"; exit 1; }
           spctl -a -vv "$app" 2>&1 || echo "Gatekeeper rejects it, as expected for an unnotarized app"
           cd dist
+          # The config names only the dmg; the zip keeps electron-builder's Orca-<version>-arm64-mac.zip.
+          zips=(*-arm64-mac.zip)
+          [ "${#zips[@]}" -eq 1 ] && [ -f "${zips[0]}" ] || { echo "::error::Expected one *-arm64-mac.zip, got: ${zips[*]}"; exit 1; }
+          mv "${zips[0]}" orca-macos-arm64.zip
           for f in orca-macos-arm64.dmg orca-macos-arm64.zip; do shasum -a 256 "$f" | tee "$f.sha256"; done
+
+      # NotSigned is the only expected state for Orca.exe and the installer; anything else means a signer ran.
+      - name: Check the Windows packages
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = 'dist/orca-windows-setup.exe'
+          $zip = 'dist/orca-windows-x64.zip'
+          $exe = 'dist/win-unpacked/Orca.exe'
+          $pty = 'dist/win-unpacked/resources/node_modules/node-pty/build/Release'
+          foreach ($file in @($setup, $zip, $exe, "$pty/conpty.node", "$pty/conpty/conpty.dll", "$pty/conpty/OpenConsole.exe")) {
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing $file" }
+          }
+          Get-Item $setup, $zip | Format-Table Name, Length
+          $info = (Get-Item $exe).VersionInfo
+          $info | Format-List FileVersion, ProductVersion, ProductName, FileDescription
+          $numeric = '{0}.{1}.{2}.{3}' -f $info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart
+          foreach ($pair in @(@('FileVersion', $info.FileVersion), @('ProductVersion', $info.ProductVersion), @('numeric file version', $numeric))) {
+            if ($pair[1] -ne $env:WIN_FILE_VERSION) { throw "Orca.exe $($pair[0]) is $($pair[1]), expected $($env:WIN_FILE_VERSION)" }
+          }
+          $setupVersion = (Get-Item $setup).VersionInfo.ProductVersion
+          if ($setupVersion -ne $env:VERSION) { throw "installer ProductVersion is $setupVersion, expected $($env:VERSION)" }
+          $appVersion = (Get-Content -Raw 'dist/win-unpacked/resources/app.asar.unpacked/out/package.json' | ConvertFrom-Json).version
+          if ($appVersion -ne $env:VERSION) { throw "packaged app version is $appVersion, expected $($env:VERSION)" }
+          foreach ($file in @($exe, $setup)) {
+            $status = (Get-AuthenticodeSignature -LiteralPath $file).Status
+            Write-Output "$file signature: $status"
+            if ($status -ne 'NotSigned') { throw "$file has signature state $status; this build must be unsigned" }
+          }
+          foreach ($file in @($setup, $zip)) {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file).Hash.ToLowerInvariant()
+            $line = "$hash  $(Split-Path -Leaf $file)"
+            Write-Output $line
+            [IO.File]::WriteAllText("$file.sha256", "$line`n")
+          }
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -380,7 +478,7 @@ jobs:
           for sum in *.sha256; do sha256sum -c "$sum"; done
           rm -f ./*.sha256
           sha256sum orca-* | tee SHA256SUMS
-          [ "$(wc -l < SHA256SUMS)" -eq 3 ] || { echo "::error::Expected deb, dmg and zip"; exit 1; }
+          [ "$(wc -l < SHA256SUMS)" -eq 5 ] || { echo "::error::Expected deb, dmg, macOS zip, Windows installer and zip"; exit 1; }
 
       # No checkout: this job holds contents: write and runs no repository code.
       - name: Publish the pre-release
@@ -406,14 +504,16 @@ jobs:
             echo '---'
             echo "Commit \`$SHA\` of \`local/build\` (latest official release at build time: $UPSTREAM_LATEST)."
             if [ "$ORCAD_TEMPLATE_SOURCE" = graft ]; then
-              echo "orcad remote-server targets other than linux-x64-glibc / darwin-arm64 come from the official v$DONOR_VERSION release."
+              echo "orcad remote-server targets other than the package's own (linux-x64-glibc / darwin-arm64 / win32-x64) come from the official v$DONOR_VERSION release."
             else
               echo 'orcad remote-server targets: all built from this commit (fork-orcad-template.yml).'
             fi
             cat <<'EOF'
 
           Unsigned builds: macOS is ad-hoc signed and not notarized, so Gatekeeper blocks the first launch
-          (`xattr -dr com.apple.quarantine /Applications/Orca.app`). Check downloads with `sha256sum -c SHA256SUMS`.
+          (`xattr -dr com.apple.quarantine /Applications/Orca.app`). Windows has no Authenticode signature:
+          SmartScreen warns about an unknown publisher (More info, Run anyway); `orca-windows-setup.exe` installs,
+          `orca-windows-x64.zip` is portable. Check downloads with `sha256sum -c SHA256SUMS`.
           EOF
           } > "$RUNNER_TEMP/notes.md"
           files=(orca-* SHA256SUMS)
