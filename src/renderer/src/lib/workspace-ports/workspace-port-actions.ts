@@ -20,6 +20,7 @@ import type {
   WorkspacePortScanResult
 } from '../../../../shared/workspace/ports/workspace-ports'
 import type { LocalhostWorktreeLabelRoute } from '../../../../shared/workspace/ports/localhost-worktree-labels'
+import { isPortDetectionEnabled } from '../../../../shared/workspace/ports/port-detection-settings'
 
 const WORKSPACE_PORT_STOP_SETTLE_MS = 500
 const WORKSPACE_PORT_TARGET_UNAVAILABLE_REASON =
@@ -175,6 +176,10 @@ export async function openWorkspacePortInBrowser(args: {
 export function publishWorkspacePortScanForHost(
   args: WorkspacePortScanPublisher & { scanKey: string; scan: WorkspacePortScanResult }
 ): void {
+  // Why: one-off scans started before detection was turned off must not re-show their ports.
+  if (!isPortDetectionEnabled(useAppStore.getState().settings)) {
+    return
+  }
   const scansByKey = { ...args.getWorkspacePortScansByKey(), [args.scanKey]: args.scan }
   const merged = mergeWorkspacePortScans(scansByKey)
   args.replaceWorkspacePortScans(scansByKey, {
