@@ -11,6 +11,7 @@ import {
 } from '../../../../../../shared/workspace-view/workspace-creator-visibility'
 import type { VisibleWorktreeOptions } from './compute-visible-worktrees'
 import { indexHiddenProjects } from '../../../../../../shared/project/catalog/hidden-projects'
+import { selectProjectGroupFilter } from '../controls/project-group-filter-selection'
 
 /** Isolate store reads so sidebar, palette and keyboard shortcuts can share the pure visibility filter. */
 export function buildVisibleWorktreeOptionsFromState(
@@ -45,6 +46,7 @@ export function buildVisibleWorktreeOptionsFromState(
     alwaysShowDefaultBranchWorkspace: state.alwaysShowDefaultBranchWorkspace,
     repoMap,
     hiddenProjects: indexHiddenProjects(state.repos, defaultHostId),
+    projectGroupFilter: selectProjectGroupFilter(state),
     workspaceHostScope: state.workspaceHostScope,
     visibleWorkspaceHostIds: state.visibleWorkspaceHostIds,
     defaultHostId,

@@ -5,6 +5,8 @@ import { useSidebarSectionRows } from './use-section-rows'
 import { useSidebarWorktreeSortOrder } from './use-sort-order'
 import { useOrderHeldWhileEngaged } from './use-order-hold'
 import { useVisibleSidebarWorktrees } from './use-visible-worktrees'
+import { useAppStore } from '@/store/index'
+import { selectProjectGroupFilter } from '../controls/project-group-filter-selection'
 
 export function useWindowSidebarListModel(args: SidebarListModelArgs): SidebarListModel {
   const { filterState, sortBy, repoMap, repos, defaultHostId } = args
@@ -22,6 +24,7 @@ export function useWindowSidebarListModel(args: SidebarListModelArgs): SidebarLi
       defaultHostId,
       agentSendTargetWorktreeId: args.agentSendTargetWorktreeId
     })
+  const projectGroupFilter = useAppStore(selectProjectGroupFilter)
   const visibleScope = useSidebarHostVisibleScope({
     filterState,
     defaultHostId,
@@ -29,7 +32,8 @@ export function useWindowSidebarListModel(args: SidebarListModelArgs): SidebarLi
     projectGroups: args.projectGroups,
     folderWorkspaces: args.folderWorkspaces,
     pairedDeviceIdsByEnvironment,
-    botListedWorktreeIdentities
+    botListedWorktreeIdentities,
+    projectGroupFilter
   })
   const externalWorktreeCards = useSidebarExternalWorktreeCards({
     repos,

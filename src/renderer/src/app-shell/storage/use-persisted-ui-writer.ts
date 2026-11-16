@@ -150,6 +150,7 @@ export function usePersistedUIWriter(): void {
       showDotfilesByWorktree: s.showDotfilesByWorktree,
       notificationsMutedByWorktree: s.notificationsMutedByWorktree,
       filterRepoIds: s.filterRepoIds,
+      hiddenProjectGroupIds: s.hiddenProjectGroupIds,
       // Persist focus/visibility acknowledgements and close/dismiss cleanup by map identity so live history keeps its read state after restart.
       acknowledgedAgentsByPaneKey: s.acknowledgedAgentsByPaneKey,
       // Retain Clear completed across restart.

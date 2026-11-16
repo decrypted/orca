@@ -8,6 +8,7 @@ import { sidebarHasActiveFilters } from '@/components/sidebar/worktree-list/cont
 import { computeVisibleWorktreeIds } from '@/components/sidebar/worktree-list/listing/compute-visible-worktrees'
 import { buildVisibleWorktreeOptionsFromState } from '@/components/sidebar/worktree-list/listing/visible-worktree-options-from-state'
 import { NO_HIDDEN_PROJECTS } from '../../../shared/project/catalog/hidden-projects'
+import { NO_PROJECT_GROUP_FILTER } from '../../../shared/project/groups/project-group-filter'
 import { isFolderWorkspaceFromOtherDevice } from '../../../shared/workspace-view/workspace-creator-visibility'
 import {
   selectFolderWorkspaces,
@@ -51,6 +52,7 @@ export function isWorkspaceNotificationMutedBySidebarFilters(
     ...inputs,
     // Hiding a project is a view choice, never a mute: its workspaces notify as if listed.
     hiddenProjects: NO_HIDDEN_PROJECTS,
+    projectGroupFilter: NO_PROJECT_GROUP_FILTER,
     filterRepoIds: [],
     workspaceHostScope: ALL_EXECUTION_HOSTS_SCOPE,
     visibleWorkspaceHostIds: null
