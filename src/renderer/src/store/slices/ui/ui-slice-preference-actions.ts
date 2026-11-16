@@ -178,6 +178,8 @@ export function createUiPreferenceActions(set: UISliceSet, get: UISliceGet): Par
 
     filterRepoIds: [],
     setFilterRepoIds: (ids) => set({ filterRepoIds: ids }),
+    hiddenProjectGroupIds: [],
+    setHiddenProjectGroupIds: (ids) => set({ hiddenProjectGroupIds: ids }),
 
     ...createAgentsViewPreferenceActions(set),
 

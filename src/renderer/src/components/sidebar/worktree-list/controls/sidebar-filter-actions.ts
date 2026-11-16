@@ -19,9 +19,13 @@ export type SidebarFilterState = {
   alwaysShowDefaultBranchWorkspace?: boolean
   visibleWorkspaceHostIds?: readonly ExecutionHostId[] | null
   workspaceHostScope?: ExecutionHostScope
+  /** Desktop-only, so it sits outside the shared row filters the phone also applies. */
+  hiddenProjectGroupIds: readonly string[]
 }
 
-export function sidebarWorkspaceRowFilters(state: SidebarFilterState): WorkspaceRowFilters {
+export function sidebarWorkspaceRowFilters(
+  state: Omit<SidebarFilterState, 'hiddenProjectGroupIds'>
+): WorkspaceRowFilters {
   return {
     hideSleepingWorkspaces: !state.showSleepingWorkspaces,
     alwaysShowDefaultBranchWorkspace: state.alwaysShowDefaultBranchWorkspace,
@@ -52,12 +56,16 @@ export function selectSidebarFilterState(
     hideWorkspacesFromOtherDevices: state.hideWorkspacesFromOtherDevices,
     alwaysShowDefaultBranchWorkspace: state.alwaysShowDefaultBranchWorkspace,
     visibleWorkspaceHostIds: state.visibleWorkspaceHostIds,
-    workspaceHostScope: state.workspaceHostScope
+    workspaceHostScope: state.workspaceHostScope,
+    hiddenProjectGroupIds: state.hiddenProjectGroupIds
   }
 }
 
 export function sidebarHasActiveFilters(state: SidebarFilterState): boolean {
-  return activeWorkspaceRowFilterKeys(sidebarWorkspaceRowFilters(state)).length > 0
+  return (
+    state.hiddenProjectGroupIds.length > 0 ||
+    activeWorkspaceRowFilterKeys(sidebarWorkspaceRowFilters(state)).length > 0
+  )
 }
 
 export type SidebarFilterSetters = Pick<
@@ -71,6 +79,7 @@ export type SidebarFilterSetters = Pick<
   | 'setHideWorkspacesFromOtherDevices'
   | 'setFilterRepoIds'
   | 'setVisibleWorkspaceHostIds'
+  | 'setHiddenProjectGroupIds'
 >
 
 /** How each shared filter returns to its default; a new filter fails to compile until listed. */
@@ -106,5 +115,8 @@ const RESET_SIDEBAR_FILTER: Record<
 export function clearSidebarFilters(state: SidebarFilterState, store: SidebarFilterSetters): void {
   for (const key of activeWorkspaceRowFilterKeys(sidebarWorkspaceRowFilters(state))) {
     RESET_SIDEBAR_FILTER[key](store)
+  }
+  if (state.hiddenProjectGroupIds.length > 0) {
+    store.setHiddenProjectGroupIds([])
   }
 }

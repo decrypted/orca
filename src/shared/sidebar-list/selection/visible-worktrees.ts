@@ -28,6 +28,8 @@ export type VisibleSidebarWorktreeInputs = {
   injectLineageAncestors?: boolean
   preserveLineageParentOrder?: boolean
   forcedVisibleWorktreeIds?: readonly string[]
+  /** The desktop's project-group filter; a hard boundary like a hidden project, so it also drops lineage ancestors. */
+  isHiddenByProjectGroup?: (worktree: Worktree) => boolean
 }
 
 /** The sidebar's visible worktrees, in display order, before grouping. */
@@ -36,14 +38,23 @@ export function selectVisibleSidebarWorktrees({
   ancestorByIdentity: everyAncestorByIdentity,
   rankOf,
   filters,
-  facts,
+  facts: rowFacts,
   worktreeLineageById,
   lineageParentIdentities,
   filterRepoIds,
   injectLineageAncestors,
   preserveLineageParentOrder,
-  forcedVisibleWorktreeIds
+  forcedVisibleWorktreeIds,
+  isHiddenByProjectGroup
 }: VisibleSidebarWorktreeInputs): Worktree[] {
+  const facts: WorkspaceRowFactReader<Worktree> = isHiddenByProjectGroup
+    ? {
+        ...rowFacts,
+        isInHiddenProject: (row) =>
+          rowFacts.isInHiddenProject(row) ||
+          (!rowFacts.isFolderWorkspace(row) && isHiddenByProjectGroup(row))
+      }
+    : rowFacts
   // Keep valid nonarchived ancestors despite ordinary filters so children retain their hierarchy.
   const listedFilterIds = filterRepoIds.filter((id) => !facts.isProjectHidden(id))
   const selectedRepoIds = listedFilterIds.length > 0 ? new Set(listedFilterIds) : null

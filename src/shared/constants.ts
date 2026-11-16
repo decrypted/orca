@@ -186,6 +186,7 @@ export function getDefaultUIState(): PersistedUIState {
     showDotfilesByWorktree: {},
     notificationsMutedByWorktree: {},
     filterRepoIds: [],
+    hiddenProjectGroupIds: [],
     agentsVisibleHostIds: null,
     agentsFilterRepoIds: [],
     agentsHideWorkspacesFromOtherDevices: false,
