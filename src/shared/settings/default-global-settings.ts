@@ -132,7 +132,6 @@ export function buildDefaultSettings(args: {
     terminalScrollOnUserInput: true,
     windowBackgroundBlur: false,
     reduceVisualEffects: false,
-    reduceMotion: 'system',
     minimizeToTrayOnClose: false,
     // Why: default-on everywhere so it round-trips across platforms; only darwin acts on it.
     showMenuBarIcon: true,
