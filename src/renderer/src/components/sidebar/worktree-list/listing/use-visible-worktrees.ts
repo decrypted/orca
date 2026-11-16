@@ -1,5 +1,6 @@
 import { selectSidebarLineageParentIdentities } from '@/store/slices/worktrees/metadata/cross-store-lineage-parents'
 import { indexHiddenProjects } from '../../../../../../shared/project/catalog/hidden-projects'
+import { selectProjectGroupFilter } from '../controls/project-group-filter-selection'
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import { shallow } from 'zustand/shallow'
 import type { AppState } from '@/store/types'
@@ -92,6 +93,7 @@ export function useVisibleSidebarWorktrees(args: {
   )
   const pairedDeviceIdsByEnvironment = useAppStoreWithHostStatuses(selectPairedDevices)
   const lineageParentIdentities = useAppStoreWithHostStatuses(selectSidebarLineageParentIdentities)
+  const projectGroupFilter = useAppStore(selectProjectGroupFilter)
 
   const needsActivityMaps = !showSleepingWorkspaces || sortBy === 'smart'
   const tabsByWorktree = useAppStore((s) =>
@@ -147,6 +149,7 @@ export function useVisibleSidebarWorktrees(args: {
       alwaysShowDefaultBranchWorkspace,
       repoMap,
       hiddenProjects: indexHiddenProjects(repos, defaultHostId),
+      projectGroupFilter,
       workspaceHostScope,
       visibleWorkspaceHostIds,
       defaultHostId,
@@ -179,6 +182,7 @@ export function useVisibleSidebarWorktrees(args: {
     defaultHostId,
     repoMap,
     repos,
+    projectGroupFilter,
     tabsByWorktree,
     ptyIdsByTabId,
     browserTabsByWorktree,
