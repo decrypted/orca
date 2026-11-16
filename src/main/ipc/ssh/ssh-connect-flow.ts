@@ -40,16 +40,12 @@ import {
   isSshHostKeptForBridgedTerminals
 } from '../../ssh/host-server/ssh-host-server-status'
 import type { HostServerOnConnectResult } from '../../ssh/host-server/ssh-host-server-on-connect'
-import { clearSshCredentialDeclined } from '../../ssh/authentication/ssh-credential-decline'
 import {
   createSshUserDisconnectedError,
   isSshUserDisconnected
 } from '../../ssh/connection/ssh-user-disconnect'
-import {
-  isManagedServerRemovalHeld,
-  liftSshHostUserDisconnect,
-  resumeRuntimeEnvironmentStatus
-} from './ssh-host-user-disconnect'
+import { isManagedServerRemovalHeld } from './ssh-host-user-disconnect'
+import { asUserHostAction } from './remote-host-auto-connect-hold'
 
 /**
  * `automatic`: no user asked for this connect, so a cancelled sign-in or a Disconnect stays.
@@ -69,24 +65,20 @@ export async function connectTarget(
     // Preserve disconnected status rather than publishing an unwanted failed connect.
     if (isSshUserDisconnected(targetId)) {
       const label = getSshTargetRegistryStore()?.getTarget(targetId)?.label ?? targetId
-      throw createSshUserDisconnectedError(label)
+      throw createSshUserDisconnectedError(label, targetId)
     }
     return admitConnect(targetId, true, options.quiet === true)
   }
-  clearSshCredentialDeclined(targetId)
-  // Only explicit user connects may lift the re-pair and crash-loop caps.
-  const managedEnvironmentId = getManagedOrcadFenceEnvironmentId(
-    getSshTargetRegistryStore()?.getTarget(targetId)
-  )
-  if (managedEnvironmentId) {
-    noteRuntimeEnvironmentConnectRequested(managedEnvironmentId)
-  }
-  const liftedEnvironments = await liftSshHostUserDisconnect(targetId)
-  try {
-    return await admitConnect(targetId)
-  } finally {
-    await resumeRuntimeEnvironmentStatus(liftedEnvironments)
-  }
+  return asUserHostAction(targetId, () => {
+    // Only explicit user connects may lift the re-pair and crash-loop caps.
+    const managedEnvironmentId = getManagedOrcadFenceEnvironmentId(
+      getSshTargetRegistryStore()?.getTarget(targetId)
+    )
+    if (managedEnvironmentId) {
+      noteRuntimeEnvironmentConnectRequested(managedEnvironmentId)
+    }
+    return admitConnect(targetId)
+  })
 }
 
 async function admitConnect(
