@@ -70,7 +70,7 @@ export function getAgentAwakeDescription(
   if (lidCloseSleeps) {
     return t(
       'auto.components.settings.agent-awake-copy.modeDescriptionLidSleeps',
-      'Choose On, Agent, or Off. Agent mode stays awake while agents are working. Closing the lid still puts this device to sleep.'
+      'Choose On, Agent, or Off. Agent mode stays awake while agents are working. Closing the lid still puts this device to sleep, unless logind is set to honor sleep locks (LidSwitchIgnoreInhibited=no).'
     )
   }
   return t(
@@ -99,7 +99,7 @@ export function getAgentAwakeLidNote(
   if (lidCloseSleeps) {
     return t(
       'auto.components.settings.agent-awake-copy.lidNoteLidSleeps',
-      'Closing the lid still puts this device to sleep.'
+      'Closing the lid still puts this device to sleep, unless logind is set to honor sleep locks (LidSwitchIgnoreInhibited=no).'
     )
   }
   return t(
