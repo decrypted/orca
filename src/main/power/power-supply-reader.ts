@@ -5,8 +5,11 @@ import { runProcess } from '@orca/process-host'
 import type { PowerSupplyState } from '../../shared/app-lifecycle/computer-awake-power-policy'
 
 export type PowerSupplyReader = {
-  /** Linux reports no AC/battery events, so only there must a reader be polled to see unplugging. */
+  /** Linux reports no AC/battery events, so only there must a reader be polled to see unplugging;
+   *  only that reader also tells whether a battery exists (null from read). */
   needsPolling: boolean
+  /** A synchronous AC/battery answer where the OS has one, checked on every decision. */
+  readOnBatteryNow?: () => boolean
   /** Resolves null only when no system battery was positively found and rejects when the
    *  answer is unknown; the charge level is read only on request. */
   read: (needLevel: boolean) => Promise<PowerSupplyState | null>
@@ -24,11 +27,12 @@ export function createPowerSupplyReader(
     return createLinuxPowerSupplyReader(LINUX_POWER_SUPPLY_ROOT)
   }
   if (platform === 'darwin') {
-    return { needsPolling: false, read: readMacosPowerSupply }
+    return { needsPolling: false, readOnBatteryNow: isOnBatteryPower, read: readMacosPowerSupply }
   }
   // Windows has no cheap charge-level source, so only the on-battery pause applies there.
   return {
     needsPolling: false,
+    readOnBatteryNow: isOnBatteryPower,
     read: async () => ({ onBattery: isOnBatteryPower(), batteryPercent: null })
   }
 }
@@ -57,14 +61,15 @@ export function createLinuxPowerSupplyReader(root: string): PowerSupplyReader {
 
   const classify = async (name: string): Promise<SupplyKind> => {
     const type = await readValue(name, 'type')
-    if (type === 'Mains' || type?.startsWith('USB')) {
+    // Scope "Device" marks a peripheral's own supply (mouse battery, an attached phone's USB
+    // charger), which neither powers the machine nor says whether it is plugged in.
+    if ((await readOptionalValue(name, 'scope')) === 'Device') {
+      return 'other'
+    }
+    if (type === 'Mains' || type.startsWith('USB')) {
       return 'external'
     }
-    // Mice and headsets report scope "Device"; only the system battery powers the machine.
-    if (type === 'Battery' && (await readOptionalValue(name, 'scope')) !== 'Device') {
-      return 'battery'
-    }
-    return 'other'
+    return type === 'Battery' ? 'battery' : 'other'
   }
 
   const readAll = async (names: string[], key: string): Promise<string[]> => {
@@ -73,6 +78,35 @@ export function createLinuxPowerSupplyReader(root: string): PowerSupplyReader {
       values.push(await readValue(name, key))
     }
     return values
+  }
+
+  const readNumber = async (name: string, key: string): Promise<number> => {
+    const value = await readOptionalValue(name, key)
+    return value === null ? Number.NaN : Number(value)
+  }
+
+  // Several batteries charge unevenly, so weigh each by its size where the kernel reports it.
+  const readChargePercent = async (batteries: string[]): Promise<number | null> => {
+    if (batteries.length > 1) {
+      for (const [nowKey, fullKey] of [
+        ['energy_now', 'energy_full'],
+        ['charge_now', 'charge_full']
+      ]) {
+        let now = 0
+        let full = 0
+        for (const name of batteries) {
+          now += await readNumber(name, nowKey)
+          full += await readNumber(name, fullKey)
+        }
+        if (Number.isFinite(now) && Number.isFinite(full) && full > 0) {
+          return Math.round((now / full) * 100)
+        }
+      }
+    }
+    const levels = (await readAll(batteries, 'capacity')).map(Number).filter(Number.isFinite)
+    return levels.length > 0
+      ? Math.round(levels.reduce((sum, level) => sum + level, 0) / levels.length)
+      : null
   }
 
   return {
@@ -110,7 +144,7 @@ export function createLinuxPowerSupplyReader(root: string): PowerSupplyReader {
         onBattery = (await readAll(batteries, 'status')).includes('Discharging')
       } else {
         for (const name of external) {
-          if ((await readValue(name, 'online')) === '1') {
+          if ((await readOptionalValue(name, 'online')) === '1') {
             onBattery = false
             break
           }
@@ -119,14 +153,7 @@ export function createLinuxPowerSupplyReader(root: string): PowerSupplyReader {
       if (!needLevel || !onBattery) {
         return { onBattery, batteryPercent: null }
       }
-      const levels = (await readAll(batteries, 'capacity')).map(Number).filter(Number.isFinite)
-      return {
-        onBattery,
-        batteryPercent:
-          levels.length > 0
-            ? Math.round(levels.reduce((sum, level) => sum + level, 0) / levels.length)
-            : null
-      }
+      return { onBattery, batteryPercent: await readChargePercent(batteries) }
     }
   }
 }

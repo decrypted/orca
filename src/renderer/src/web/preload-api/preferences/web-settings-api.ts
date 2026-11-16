@@ -111,7 +111,9 @@ export function createWebSettingsApi(): Pick<Partial<PreloadApi>, 'agentAwake'> 
             settings.computerAwakeMode,
             settings.keepComputerAwakeWhileAgentsRun
           ),
-          active: false
+          active: false,
+          hasBattery: null,
+          lidInhibitAvailable: false
         }
       },
       onChanged: () => noopUnsubscribe
