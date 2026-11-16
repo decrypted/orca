@@ -36,6 +36,7 @@ vi.mock('../runtime-environments/runtime-environments', () => ({
 }))
 import type { SshConnectionStatus, SshTarget } from '../../../shared/remote-runtime/ssh/ssh-types'
 import { handleSshConnectionStateChange } from './ssh-connection-state-callbacks'
+import { decideHostServer } from './ssh-host-server-connect'
 import type { RemoteHostAutoConnectSettings } from '../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
 import { clearRuntimeEnvironmentManualDisconnect } from '../runtime-environments/connectivity/runtime-environment-manual-disconnect'
 import { isSshUserDisconnected } from '../../ssh/connection/ssh-user-disconnect'
@@ -171,6 +172,20 @@ describe('a host whose session ends while automatic connects are off', () => {
 
     expect(isSshUserDisconnected(target.id)).toBe(true)
     await vi.waitFor(() => expect(runtime.invalidate).toHaveBeenCalledWith(managedServer.id))
+    // The full Disconnect teardown, so system-SSH forwards and tunnels do not outlive the hold.
+    await vi.waitFor(() =>
+      expect(mocks.mockPortForwardManager.removeAllForwards).toHaveBeenCalledWith(target.id)
+    )
+  })
+
+  it("holds a host again when the user's own Connect fails", async () => {
+    vi.mocked(decideHostServer).mockRejectedValueOnce(new Error('Connection refused'))
+
+    await expect(
+      Promise.resolve(handlers.get('ssh:connect')!(null, { targetId: otherHost.id }))
+    ).rejects.toThrow()
+
+    expect(isSshUserDisconnected(otherHost.id)).toBe(true)
   })
 
   it('keeps a Disconnect by the user when automatic connects turn back on', async () => {
