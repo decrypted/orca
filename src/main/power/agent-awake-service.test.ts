@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AgentAwakeService } from './agent-awake-service'
-import { readLinuxPowerSupply } from './power-supply-reader'
+import { createLinuxPowerSupplyReader } from './power-supply-reader'
 import type { PowerSupplyState } from '../../shared/app-lifecycle/computer-awake-power-policy'
 
 vi.mock('electron', () => ({
@@ -36,7 +36,7 @@ function createService(
   }
   const service = new AgentAwakeService({
     blocker,
-    readPowerSupply: async () => supply.current,
+    powerSupplyReader: { needsPolling: false, read: async () => supply.current },
     linuxAssertion: createAssertion(),
     macosAssertion: createAssertion(),
     logger: { debug: vi.fn(), warn: vi.fn() },
@@ -166,7 +166,7 @@ describe('readLinuxPowerSupply', () => {
       BAT0: { type: 'Battery', capacity: '42', status: 'Discharging' },
       hid_mouse: { type: 'Battery', scope: 'Device', capacity: '5', status: 'Discharging' }
     })
-    await expect(readLinuxPowerSupply(root)).resolves.toEqual({
+    await expect(createLinuxPowerSupplyReader(root).read(true)).resolves.toEqual({
       onBattery: true,
       batteryPercent: 42
     })
@@ -174,6 +174,6 @@ describe('readLinuxPowerSupply', () => {
 
   it('reports no battery on a desktop', async () => {
     const root = await supplyDir({ AC: { type: 'Mains', online: '1' } })
-    await expect(readLinuxPowerSupply(root)).resolves.toBeNull()
+    await expect(createLinuxPowerSupplyReader(root).read(true)).resolves.toBeNull()
   })
 })
