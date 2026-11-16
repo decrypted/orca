@@ -1,23 +1,45 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import type { ReduceMotionPreference } from '../../../shared/accessibility/reduce-motion-settings'
-import { readMediaQuery, useMediaQuery } from './use-media-query'
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
+// Why shared: one per chat row would otherwise each hold a MediaQueryList and listener.
+let reducedMotionMedia: MediaQueryList | null = null
+let osReduced = false
 let reduceMotionAlways = false
 const reduceMotionSubscribers = new Set<() => void>()
 
-function subscribeToReduceMotionSetting(onChange: () => void): () => void {
+function notifyReduceMotionSubscribers(): void {
+  for (const onChange of reduceMotionSubscribers) {
+    onChange()
+  }
+}
+
+function watchOsReducedMotion(): void {
+  if (
+    reducedMotionMedia ||
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
+    return
+  }
+  reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY)
+  osReduced = reducedMotionMedia.matches
+  reducedMotionMedia.addEventListener('change', (event) => {
+    osReduced = event.matches
+    notifyReduceMotionSubscribers()
+  })
+}
+
+function subscribeToReducedMotion(onChange: () => void): () => void {
+  watchOsReducedMotion()
   reduceMotionSubscribers.add(onChange)
   return () => reduceMotionSubscribers.delete(onChange)
 }
 
-function readReduceMotionAlways(): boolean {
-  return reduceMotionAlways
-}
-
 export function readPrefersReducedMotion(): boolean {
-  return reduceMotionAlways || readMediaQuery(REDUCED_MOTION_QUERY)
+  watchOsReducedMotion()
+  return reduceMotionAlways || osReduced
 }
 
 // Why: a scripted scroll's explicit `behavior` is not affected by CSS or the OS setting.
@@ -26,12 +48,11 @@ export function motionSafeScrollBehavior(behavior: ScrollBehavior = 'smooth'): S
 }
 
 export function usePrefersReducedMotion(): boolean {
-  const always = useSyncExternalStore(
-    subscribeToReduceMotionSetting,
-    readReduceMotionAlways,
-    readReduceMotionAlways
+  return useSyncExternalStore(
+    subscribeToReducedMotion,
+    readPrefersReducedMotion,
+    readPrefersReducedMotion
   )
-  return useMediaQuery(REDUCED_MOTION_QUERY) || always
 }
 
 /** Applies the Reduce motion setting to this window: main.css motion variants and the readers above. */
@@ -46,8 +67,6 @@ export function useReduceMotionSetting(preference: ReduceMotionPreference | unde
       delete root.dataset.reduceMotion
     }
     reduceMotionAlways = always
-    for (const onChange of reduceMotionSubscribers) {
-      onChange()
-    }
+    notifyReduceMotionSubscribers()
   }, [always])
 }
