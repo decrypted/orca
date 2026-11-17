@@ -1,4 +1,4 @@
-import type { ExecutionHostId, ExecutionHostScope } from '../../execution-host'
+import type { ExecutionHostId, ExecutionHostScope } from '../../execution-host/execution-host'
 import type { FolderWorkspace } from '../../folder-workspaces/folder-workspace-types'
 import type { ProjectGroupFilter } from '../../project/groups/project-group-filter'
 import type { ProjectGroup } from '../../project/groups/project-group-types'

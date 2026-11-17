@@ -20,7 +20,6 @@ import {
 } from '../usage/use-owner-usage-rate-limits'
 import { isOwnerNotSetUpPlaceholder } from '../usage/owner-usage-rate-limits'
 import { useTranslate } from '@/i18n/use-translate'
-import { isPortDetectionEnabled } from '../../../../../shared/workspace/ports/port-detection-settings'
 
 export function useStatusBarController(floatingTerminalOpen: boolean) {
   const t = useTranslate()
@@ -183,7 +182,8 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
   const showOpencodeGo = visibleOpencodeGo !== null && statusBarItems.includes('opencode-go')
   const showSsh = statusBarItems.includes('ssh')
   const showResourceUsage = statusBarItems.includes('resource-usage')
-  const showPorts = statusBarItems.includes('ports') && isPortDetectionEnabled(settings)
+  const showPorts = statusBarItems.includes('ports') && settings?.portDetectionEnabled !== false
+  const showGitBlame = statusBarItems.includes('git-blame')
   const showFloatingTerminalToggle =
     floatingTerminalEnabled && floatingTerminalTriggerLocation === 'status-bar'
   // Why: meter-only children (excludes resource-usage) so the % display callout anchors to a real meter cluster.
@@ -315,6 +315,7 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     showEmptyUsageCta,
     showFloatingTerminalToggle,
     showFloatingWorkspaceAttentionDot,
+    showGitBlame,
     showPorts,
     showResourceUsage,
     showSsh,

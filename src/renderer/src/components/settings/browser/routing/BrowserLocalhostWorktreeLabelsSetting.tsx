@@ -1,4 +1,4 @@
-import type { GlobalSettings } from '../../../../../../shared/global-settings-types'
+import type { GlobalSettings } from '../../../../../../shared/settings/global-settings-types'
 import { isPortDetectionEnabled } from '../../../../../../shared/workspace/ports/port-detection-settings'
 import { useTranslate } from '@/i18n/use-translate'
 import { SearchableSetting } from '../../section-layout/SearchableSetting'

@@ -5,7 +5,7 @@ import type { Repo } from '../../../../../../shared/repository/repo-types'
 import {
   getRepoExecutionHostId,
   type ExecutionHostId
-} from '../../../../../../shared/execution-host'
+} from '../../../../../../shared/execution-host/execution-host'
 import type { SidebarWorktreeFilters } from './use-filters'
 import type { ProjectGroupFilter } from '../../../../../../shared/project/groups/project-group-filter'
 import { filterFolderWorkspacesFromOtherDevices } from '../../../../../../shared/workspace-view/workspace-creator-visibility'

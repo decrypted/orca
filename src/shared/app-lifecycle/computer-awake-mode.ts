@@ -1,4 +1,4 @@
-import type { GlobalSettings } from '../global-settings-types'
+import type { GlobalSettings } from '../settings/global-settings-types'
 import type { ComputerAwakePause } from './computer-awake-power-policy'
 
 export const COMPUTER_AWAKE_MODES = ['on', 'off', 'auto'] as const

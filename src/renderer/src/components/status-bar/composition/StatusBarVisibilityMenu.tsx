@@ -1,4 +1,4 @@
-import { Activity, Plug, Server } from 'lucide-react'
+import { Activity, GitCommitHorizontal, Plug, Server } from 'lucide-react'
 import React from 'react'
 import {
   DropdownMenu,
@@ -206,6 +206,13 @@ export function StatusBarVisibilityMenu({
             {t('auto.components.status.bar.StatusBar.9659e38343', 'Ports')}
           </DropdownMenuCheckboxItem>
         )}
+        <DropdownMenuCheckboxItem
+          checked={statusBarItems.includes('git-blame')}
+          onCheckedChange={() => toggleStatusBarItem('git-blame')}
+        >
+          <GitCommitHorizontal className="size-3.5" />
+          {t('editor.gitBlame.statusBarItem', 'Git Blame')}
+        </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

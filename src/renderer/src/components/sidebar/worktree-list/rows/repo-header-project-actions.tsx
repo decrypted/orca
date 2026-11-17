@@ -30,10 +30,13 @@ import { translate } from '@/i18n/i18n'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { getRepositoryIconSectionId } from '@/components/settings/repository/repository-settings-targets'
 import { WslMoveProjectMenuItem } from '@/components/wsl-move/WslMoveProjectMenuItem'
+import { WslMovedRepoUseHereMenuItem } from '@/components/wsl-move/WslMovedUseHereMenuItem'
 import { ProjectScopeSleepMenuItem } from '../../workspace-actions/sleep/ProjectScopeSleepMenuItem'
 import type { ProjectGroup } from '../../../../../../shared/project/groups/project-group-types'
-import type { Repo } from '../../../../../../shared/repository/repo-types'
-import type { WorktreeVisibilityDefaults } from '../../../../../../shared/global-settings-types'
+import type {
+  Repo,
+  WorktreeVisibilityDefaults
+} from '../../../../../../shared/repository/repo-types'
 import { isGitRepoKind } from '../../../../../../shared/repository/repo-kind'
 import '../../../../../../shared/worktree/visibility/ownership'
 import {
@@ -187,6 +190,7 @@ export const RepoHeaderProjectActionsMenu = React.memo(function RepoHeaderProjec
           </DropdownMenuItem>
         ) : null}
         <WslMoveProjectMenuItem repo={repo} />
+        <WslMovedRepoUseHereMenuItem repo={repo} />
         <ProjectScopeSleepMenuItem
           leadingSeparator
           scope={{ kind: 'project', repos: hostRepos ? [...hostRepos.values()] : [repo] }}

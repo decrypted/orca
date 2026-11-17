@@ -1,6 +1,6 @@
 import type { LaunchAgentStartupPromptPlan } from '@/lib/agent-session/launch/prompt/launch-agent-startup-prompt-plan'
 import type { agentPickerLaunchInputs } from '../../../../../shared/agent-launch/picker/agent-launch-picker'
-import type { ExecutionHostId } from '../../../../../shared/execution-host'
+import type { ExecutionHostId } from '../../../../../shared/execution-host/execution-host'
 import { worktreeIdsEqual } from '../../../../../shared/worktree/id'
 import type {
   WorkspaceLinkedItem as FolderWorkspaceLinkedTask,
@@ -163,6 +163,8 @@ export type PendingWorktreeCreation = {
   // Instant folder creates retain the initiating surface; explicit opens and retries reveal progress.
   loaderVisible: boolean
   error?: string
+  /** The user's next step, shown under `error`. */
+  errorHelp?: string
   provisioningLog?: string
   /** VM creates: the provisioned VM's environment checks, run before the workspace is created. */
   environmentCheck?: PendingVmEnvironmentCheck

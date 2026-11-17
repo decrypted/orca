@@ -2,7 +2,7 @@ import type { ComposerModalData } from './new-workspace/composer/composer-modal-
 import { toast } from 'sonner'
 import {
   formatWorkspaceCreateError,
-  getWorkspaceCreateErrorToastMessage
+  getWorkspaceCreateErrorNotice
 } from '@/lib/workspace/creation/workspace-create-error-format'
 import type {
   AgentPickerDraft,
@@ -42,7 +42,7 @@ import { useTranslate } from '@/i18n/use-translate'
 import { getWorkspaceComposerInitialFocusTarget } from '@/lib/workspace/creation/workspace-composer-initial-focus'
 import '@/components/sidebar/workspace-creation/folder/folder-workspace-source-repos'
 import { getFolderWorkspacePrimaryActionLabel } from '@/components/sidebar/workspace-creation/folder/folder-workspace-source-selection'
-import { useAgentMenuObservation } from '@/components/tab-bar/use-new-tab-agent-menu-rows'
+import { useAgentMenuObservation } from '@/components/agent/launch-menu/use-new-tab-agent-menu-rows'
 import { addAppKeyListener, removeAppKeyListener } from '@/lib/keyboard/app-keyboard-router'
 
 // Keep Add Project’s clone/SSH machinery outside the composer entry render, matching App loading.
@@ -255,7 +255,9 @@ function QuickTabBody({
           linkedWorkItem: cardProps.linkedWorkItem,
           recovery: { ...quickAgentPick, agent: quickAgent, note: cardProps.note }
         }
-        toast.error(getWorkspaceCreateErrorToastMessage(formatWorkspaceCreateError(error)), {
+        const notice = getWorkspaceCreateErrorNotice(formatWorkspaceCreateError(error))
+        toast.error(notice.title, {
+          description: notice.description,
           action: {
             label: translate('auto.lib.composerCreateHandoff.reopen', 'Reopen'),
             onClick: () => {

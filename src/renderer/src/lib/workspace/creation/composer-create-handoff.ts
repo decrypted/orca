@@ -10,6 +10,7 @@ import {
   continueBackgroundWorktreeCreation,
   runBackgroundWorktreeCreation
 } from '@/lib/workspace/creation/worktree-creation-flow'
+import type { WorkspaceCreateErrorNotice } from '@/lib/workspace/creation/workspace-create-error-format'
 
 // Why: composer preflight (PR fetch, hook checks, settings writes) can stall on
 // the network; past this delay the sidebar row owns the submit so the modal closes.
@@ -23,7 +24,7 @@ export type ComposerCreateHandoff = {
   /** True once a staged sidebar row owns the submit. */
   isHandedOff: () => boolean
   /** Reports a handed-off failure; returns false when the composer still owns it. */
-  fail: (message: string) => boolean
+  fail: (notice: WorkspaceCreateErrorNotice) => boolean
   /** Ends the handoff window, reporting a handed-off submit that never started. */
   dispose: () => void
 }
@@ -55,7 +56,7 @@ export function scheduleComposerCreateHandoff({
     clearTimeout(deadline)
   }
 
-  const fail = (message: string): boolean => {
+  const fail = (notice: WorkspaceCreateErrorNotice): boolean => {
     if (stagedCreationId === null) {
       return false
     }
@@ -69,7 +70,8 @@ export function scheduleComposerCreateHandoff({
       return true
     }
     store.removePendingWorktreeCreation(stagedCreationId)
-    toast.error(message, {
+    toast.error(notice.title, {
+      description: notice.description,
       action: {
         label: translate('auto.lib.composerCreateHandoff.reopen', 'Reopen'),
         onClick: reopenComposer
@@ -86,12 +88,12 @@ export function scheduleComposerCreateHandoff({
     onHandOff()
     deadline = setTimeout(
       () =>
-        fail(
-          translate(
+        fail({
+          title: translate(
             'auto.lib.composerCreateHandoff.preparationTimedOut',
             'Worktree preparation timed out.'
           )
-        ),
+        }),
       deadlineMs
     )
   }, delayMs)
@@ -128,12 +130,12 @@ export function scheduleComposerCreateHandoff({
     isHandedOff: () => stagedCreationId !== null,
     fail,
     dispose: () => {
-      fail(
-        translate(
+      fail({
+        title: translate(
           'auto.lib.composerCreateHandoff.needsInput',
           'Worktree was not created because it needs more input.'
         )
-      )
+      })
       finish()
     }
   }
