@@ -14,6 +14,18 @@ export type ComputerAwakeTimer = {
   hours: number
 }
 
+/** Keep-awake options composed into GlobalSettings. */
+export type ComputerAwakePowerSettings = {
+  /** Set only while On runs for a chosen number of hours; older builds just see On. */
+  computerAwakeTimer?: ComputerAwakeTimer | null
+  /** Releases every awake block on battery power; absent reads as on. */
+  computerAwakeOnlyWhilePluggedIn?: boolean
+  /** With blocks allowed on battery, releases them below this charge; absent reads as 50 %. */
+  computerAwakeBatteryFloorPercent?: number
+  /** Linux only: off also takes logind's lid-switch inhibitor; absent reads as on. */
+  computerAwakeLidCloseSleeps?: boolean
+}
+
 export type ComputerAwakeStatus = {
   mode: ComputerAwakeMode
   active: boolean
