@@ -5,7 +5,7 @@ import { WorktreeListSlide } from './slides/WorktreeListSlide'
 import { TerminalSlide } from './slides/TerminalSlide'
 import { useTranslate } from '@/i18n/use-translate'
 import { forceLayoutReflow } from '@/lib/overlay-interaction/force-layout-reflow'
-import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { usePrefersReducedMotion } from '@/hooks/theme/usePrefersReducedMotion'
 
 const DWELL_MS = 4500
 const TAP_BEFORE_PUSH_MS = 240

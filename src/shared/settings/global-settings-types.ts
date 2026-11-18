@@ -16,7 +16,7 @@ import type { TerminalCustomTheme } from '../terminal-themes/terminal-custom-the
 import type { GlobalWindowsRuntimeDefault } from '../execution-host/project-runtime-preference'
 import type { PersistedNativeChatSessionOptions } from '../native-chat/input/native-chat-session-options'
 import type { AgentChatPermissionMode } from '../agent-launch/permissions/agent-chat-permission-mode'
-import type { ComputerAwakeMode, ComputerAwakeTimer } from '../app-lifecycle/computer-awake-mode'
+import type { ComputerAwakeMode } from '../app-lifecycle/computer-awake-mode'
 import type { CommitMessageAiSettings } from '../source-control/ai/generation/commit-message-ai-types'
 import type { HostSettingOverrides } from '../execution-host/host-setting-overrides'
 import type {
@@ -218,6 +218,8 @@ export type GlobalSettings = GlobalSettingsBase & {
   nativeChatInlineVisuals?: boolean
   /** Hovering a web link in chat fetches the page to preview it; absent means on. GitHub cards ignore this. */
   nativeChatLinkPreviews?: boolean
+  /** Spellcheck and autocorrect (system text replacement) in the chat composer; absent means on. */
+  nativeChatComposerSpellcheck?: boolean
   /** A card under a chat turn that opened a pull request; absent means on. */
   nativeChatOpenedPullRequests?: boolean
   /** Structured Codex/Claude chats inherit the login-shell env; off limits it to nativeChatShellEnvironmentVariables plus PATH/locale. */
@@ -416,14 +418,6 @@ export type GlobalSettings = GlobalSettingsBase & {
   keepComputerAwakeWhileAgentsRun: boolean
   /** Optional for mixed-version compatibility; the legacy boolean maps true to Auto. */
   computerAwakeMode?: ComputerAwakeMode
-  /** Set only while On runs for a chosen number of hours; older builds just see On. */
-  computerAwakeTimer?: ComputerAwakeTimer | null
-  /** Releases every awake block on battery power; absent reads as on. */
-  computerAwakeOnlyWhilePluggedIn?: boolean
-  /** With blocks allowed on battery, releases them below this charge; absent reads as 50 %. */
-  computerAwakeBatteryFloorPercent?: number
-  /** Linux only: off also takes logind's lid-switch inhibitor; absent reads as on. */
-  computerAwakeLidCloseSleeps?: boolean
   /** macOS Option: auto uses keyboard layout (US → Meta, others compose); false composes; true sends Meta on both keys; left/right select one.
    * See docs/terminal-option-key-layout-aware-default.md. */
   terminalMacOptionAsAlt: 'auto' | 'true' | 'false' | 'left' | 'right'

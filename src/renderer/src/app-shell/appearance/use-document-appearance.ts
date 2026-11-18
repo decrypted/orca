@@ -3,15 +3,15 @@ import { useShallow } from 'zustand/react/shallow'
 import { buildAppFontFamily } from '@/app-shell/appearance/app-font-family'
 import { applyCodeFontSmoothing } from '@/lib/editor/appearance/code-font-smoothing'
 import { applyMarkdownCodeFontFamily } from '@/lib/editor/appearance/markdown-code-font'
-import { useSplitDividerSetting } from '@/hooks/use-split-divider-setting'
+import { useSplitDividerSetting } from '@/hooks/theme/use-split-divider-setting'
 import { rebuildAllTerminalWebglRenderers } from '@/lib/pane-manager/pane-manager-registry'
 import { applyThemeBackground } from './theme-background'
 import { syncThemeBackgroundVideo } from './theme-background-video'
 import {
   usePrefersReducedMotion,
   useReduceMotionSetting
-} from '../../hooks/usePrefersReducedMotion'
-import { useWindowActive } from '../../hooks/use-window-active'
+} from '../../hooks/theme/usePrefersReducedMotion'
+import { useWindowActive } from '../../lib/window-activity/use-window-active'
 import { tolerantPluginThemeBackgroundRegistration } from '../../../../shared/plugins/artifacts/plugin-theme-background'
 import {
   findCodeEditorTheme,
@@ -33,7 +33,7 @@ import { usePluginIconThemeActivation } from '../../store/plugins/appearance/plu
 import { usePluginFontRegistration } from '../../store/plugins/appearance/plugin-fonts'
 import { scheduleRuntimeGraphSync } from '../../runtime/sync-runtime-graph/graph-sync-scheduler'
 import { useAppStore } from '../../store/index'
-import { useReduceVisualEffects } from '@/hooks/use-reduce-visual-effects'
+import { useReduceVisualEffects } from '@/hooks/theme/use-reduce-visual-effects'
 
 export function useDocumentAppearance(): void {
   const {

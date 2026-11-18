@@ -6,7 +6,7 @@ import {
   type DashboardSnapshot
 } from '../../../../../shared/agent-status/presentation/dashboard-snapshot'
 import { patchDashboardSnapshotFromAgentStatus } from './dashboard-agent-status-patch'
-import { readPrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { readPrefersReducedMotion } from '@/hooks/theme/usePrefersReducedMotion'
 
 const TOPOLOGY_REFRESH_DEBOUNCE_MS = 250
 const TOPOLOGY_REFRESH_MAX_WAIT_MS = 1_000

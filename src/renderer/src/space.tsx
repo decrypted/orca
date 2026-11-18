@@ -3,7 +3,7 @@ import { StrictMode, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { ConfirmationDialogProvider } from './components/confirmation-dialog'
+import { ConfirmationDialogProvider } from './components/dismiss/confirmation/confirmation-dialog'
 import DeleteWorktreeDialog from './components/sidebar/workspace-actions/deletion/DeleteWorktreeDialog'
 import PreservedBranchBatchReviewModal from './components/sidebar/workspace-actions/deletion/PreservedBranchBatchReviewModal'
 import WorkspaceSpacePage from './components/workspace-space/WorkspaceSpacePage'
@@ -19,8 +19,8 @@ import { getOrCreateRendererRoot } from './app-shell/startup/react-renderer-root
 import { I18nProvider } from './i18n/I18nProvider'
 import { useAppStore } from './store/index'
 import { installBodyOverlayAttributes } from './lib/overlay-interaction/body-overlay-attributes'
-import { useReduceVisualEffects } from './hooks/use-reduce-visual-effects'
-import { useReduceMotionSetting } from './hooks/usePrefersReducedMotion'
+import { useReduceVisualEffects } from './hooks/theme/use-reduce-visual-effects'
+import { useReduceMotionSetting } from './hooks/theme/usePrefersReducedMotion'
 
 const disposeBodyOverlayAttributes = installBodyOverlayAttributes()
 import.meta.hot?.dispose(disposeBodyOverlayAttributes)

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { useAppStore } from '@/store/index'
-import { readPrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { readPrefersReducedMotion } from '@/hooks/theme/usePrefersReducedMotion'
 import { automationsPageLocationKey } from '../../store/slices/ui/automations-page-location'
 import type { AutomationsPageLocation } from './automation-page-state'
 import type { AutomationsPageNavigation } from './automations-page-navigation'

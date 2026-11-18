@@ -4,7 +4,7 @@ import { Check, ChevronLeft, ChevronRight, ExternalLink, Puzzle } from 'lucide-r
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import { Button } from '@/components/ui/button'
-import { motionSafeScrollBehavior } from '@/hooks/usePrefersReducedMotion'
+import { motionSafeScrollBehavior } from '@/hooks/theme/usePrefersReducedMotion'
 import type { ThemeLook } from './onboarding-theme-looks'
 import { ThemeLookCardPreview } from './ThemeLookPreview'
 
