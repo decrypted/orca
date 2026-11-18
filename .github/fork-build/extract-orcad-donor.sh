@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage: extract-orcad-donor.sh <version X.Y.Z> <sha256 of orca-ide_X.Y.Z_amd64.deb> <dest dir>
-# Prints the donor's resources dir. ar + tar instead of dpkg-deb so the macOS runner can extract it too;
+# Prints the donor's resources dir. ar (bsdtar on macOS) + tar instead of dpkg-deb so the macOS runner can extract it too;
 # Windows runners lack binutils, so 7-Zip unpacks the ar archive and the xz stream there.
 set -euo pipefail
 version="$1"
@@ -24,6 +24,11 @@ case "$(uname -s)" in
     7z x -y -bso0 -bsp0 "$name" >&2
     7z x -y -bso0 -bsp0 data.tar.* >&2
     tar -xf data.tar "${members[@]}"
+    ;;
+  Darwin)
+    # BSD ar keeps the GNU member names' trailing '/' (debian-binary/); bsdtar reads both ar variants.
+    tar -xf "$name"
+    tar -xf data.tar.* "${members[@]}"
     ;;
   *)
     ar x "$name"
