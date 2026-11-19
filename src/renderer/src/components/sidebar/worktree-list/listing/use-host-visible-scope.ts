@@ -9,6 +9,7 @@ import {
 import type { SidebarWorktreeFilters } from './use-filters'
 import type { ProjectGroupFilter } from '../../../../../../shared/project/groups/project-group-filter'
 import { filterFolderWorkspacesFromOtherDevices } from '../../../../../../shared/workspace-view/workspace-creator-visibility'
+import { withoutBotListedFolderWorkspaces } from '../../../../../../shared/sidebar-list/selection/visible-worktrees'
 import {
   filterFolderWorkspacesForVisibleHosts,
   filterProjectGroupsForVisibleHosts,
@@ -23,6 +24,8 @@ export function useSidebarHostVisibleScope(args: {
   projectGroups: readonly ProjectGroup[]
   folderWorkspaces: readonly FolderWorkspace[]
   pairedDeviceIdsByEnvironment: Parameters<typeof filterFolderWorkspacesFromOtherDevices>[1]
+  /** Listed under their bot instead (compute-visible-worktrees.ts). */
+  botListedWorktreeIdentities?: ReadonlySet<string>
   projectGroupFilter: ProjectGroupFilter
 }) {
   const { filterState, defaultHostId, repos, projectGroups, folderWorkspaces, projectGroupFilter } =
@@ -61,7 +64,7 @@ export function useSidebarHostVisibleScope(args: {
   }, [defaultHostId, projectGroupFilter, projectGroups, visibleHostIdSet])
   const visibleFolderWorkspacesForRows = useMemo(() => {
     const hostVisibleWorkspaces = filterFolderWorkspacesForVisibleHosts(
-      folderWorkspaces,
+      withoutBotListedFolderWorkspaces(folderWorkspaces, args.botListedWorktreeIdentities),
       projectGroups,
       visibleHostIdSet,
       defaultHostId
@@ -79,6 +82,7 @@ export function useSidebarHostVisibleScope(args: {
       args.pairedDeviceIdsByEnvironment
     )
   }, [
+    args.botListedWorktreeIdentities,
     args.pairedDeviceIdsByEnvironment,
     defaultHostId,
     folderWorkspaces,

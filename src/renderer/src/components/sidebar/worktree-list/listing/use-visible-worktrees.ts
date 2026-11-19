@@ -26,6 +26,7 @@ import type { SidebarWorktreeFilters } from './use-filters'
 import { useReusedArrayIdentity } from './use-reused-array-identity'
 import { useSleepingSweepRetention } from './use-sleeping-sweep-retention'
 import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
+import { useBotListedWorktreeIdentities } from '@/components/bots/use-bot-listed-worktree-identities'
 import {
   readHiddenVmCheckouts,
   subscribeHiddenVmCheckouts,
@@ -82,6 +83,7 @@ export function useVisibleSidebarWorktrees(args: {
     workspaceHostScope
   } = filterState
   const worktreesByRepo = useAppStore((s) => selectWorktreesByRepo(s))
+  const botListedWorktreeIdentities = useBotListedWorktreeIdentities()
   const repos = useAppStore((s) => s.repos)
   const agentStatusEpoch = useAppStore((s) => (!showSleepingWorkspaces ? s.agentStatusEpoch : 0))
   // Opt-out lists must skip the clock so they cannot evict the sample shared by live lists.
@@ -138,6 +140,7 @@ export function useVisibleSidebarWorktrees(args: {
       worktreeIdsWithStructuredChat,
       worktreeIdsWithLiveAgent,
       sleepingSweepExemptWorktreeIds,
+      botListedWorktreeIdentities,
       hideDefaultBranchWorkspace,
       hideAutomationGeneratedWorkspaces,
       hideCliCreatedWorkspaces,
@@ -166,6 +169,7 @@ export function useVisibleSidebarWorktrees(args: {
     args.agentSendTargetWorktreeId,
     worktreeIdsWithLiveAgent,
     sleepingSweepExemptWorktreeIds,
+    botListedWorktreeIdentities,
     filterRepoIds,
     showSleepingWorkspaces,
     hideDefaultBranchWorkspace,
@@ -194,5 +198,5 @@ export function useVisibleSidebarWorktrees(args: {
   // Reuse equal visibility results across epochs to avoid churning the entire row-model chain.
   const visibleWorktrees = useReusedArrayIdentity(recomputedVisibleWorktrees)
 
-  return { visibleWorktrees, pairedDeviceIdsByEnvironment }
+  return { visibleWorktrees, pairedDeviceIdsByEnvironment, botListedWorktreeIdentities }
 }
