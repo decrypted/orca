@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { uiDateTimeFormat } from '@/i18n/ui-intl-formatters'
+import { motionSafeScrollBehavior } from '@/hooks/theme/usePrefersReducedMotion'
 import type { Bot } from '../../../../../shared/bot-types'
 import {
   BOT_ITEM_STATUSES,
@@ -270,8 +271,7 @@ export function BotItemActivityList({
     if (!target) {
       return
     }
-    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    target.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' })
+    target.scrollIntoView({ block: 'center', behavior: motionSafeScrollBehavior() })
     target.focus({ preventScroll: true })
   }, [])
   // The rail runs through the event glyphs; each glyph and card sits on the panel fill over it.
