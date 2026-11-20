@@ -2,13 +2,15 @@
 
 import { randomUUID } from 'node:crypto'
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import { nativeChatScratchFolderName } from '../../native-chat/conversation-files/native-chat-scratch-folder'
 import { withOpenCodeInstructionsFile } from '../../opencode/opencode-inline-config'
 import type { AcpLaunchSpec } from './acp-launch-contract'
 import type { InitializeResponse } from '../generated/acp-protocol.generated'
 import { acpAgentName } from '../session/acp-structured-agent-definitions'
+import { placeCursorOpeningRule } from '../../cursor/cursor-opening-rule'
+import { writeHermesContextFile } from '../../hermes/hermes-context-file'
 
 /** What a launch adds so the agent's own system prompt carries the instructions. */
 export type AcpInstructionsLaunch = {
@@ -21,14 +23,21 @@ export type AcpInstructionsLaunch = {
   sessionMetaOnReopen?: true
   /** Whether the agent's `initialize` says it takes `sessionMeta`; a session it doesn't never opens. */
   takesSessionMeta?: (initialized: InitializeResponse) => boolean
+  /** Runs around `session/new` (never a reopen) in the session's folder; returns what undoes it. */
+  aroundNewSession?: (cwd: string) => Promise<() => Promise<void>>
 }
 
 export type AcpInstructionsDelivery = (input: {
   text: string
   /** Writes the text to a file only this host's user can read, and returns its path. */
   file: () => Promise<string>
+  /** Writes `content` at `path` inside a folder of this chat's own that only this host's user can
+   *  read, and returns the folder. */
+  folder: (path: string, content: string) => Promise<string>
   /** What the child will see, inherited values included. */
   env: Readonly<Record<string, string>>
+  /** The folder the agent runs in, on this host. */
+  cwd: string
 }) => Promise<AcpInstructionsLaunch | null>
 
 // Grok keeps them with the session, so a reopened conversation keeps the preamble it began with.
@@ -63,15 +72,42 @@ export const deliverOmpInstructions: AcpInstructionsDelivery = async ({ file }) 
   args: [`--append-system-prompt=${await file()}`]
 })
 
+// Cursor reads its folder's rules once, when a session opens, and keeps them across reopens.
+export const deliverCursorInstructions: AcpInstructionsDelivery = async ({ text }) => ({
+  aroundNewSession: (cwd) => placeCursorOpeningRule(cwd, text)
+})
+
+// Hermes builds its system prompt from the folder's `.hermes.md` at the first turn and again at
+// each compaction, so the file stays; every launch rewrites it with the current text.
+export const deliverHermesInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
+  await writeHermesContextFile(cwd, text)
+  return {}
+}
+
+// Copilot rebuilds them at every start from its instruction sources, so each launch passes the folder.
+// Only an instructions file applies at once: an AGENTS.md there counts as nested and loads on demand.
+export const deliverCopilotInstructions: AcpInstructionsDelivery = async ({
+  text,
+  folder,
+  env
+}) => {
+  const dir = await folder(
+    join('.github', 'instructions', 'orca.instructions.md'),
+    `---\napplyTo: "**"\n---\n${text}\n`
+  )
+  // The list is comma-separated, so a folder with a comma in its path would silently go unread.
+  if (dir.includes(',')) {
+    return null
+  }
+  const inherited = env.COPILOT_CUSTOM_INSTRUCTIONS_DIRS?.trim()
+  return { env: { COPILOT_CUSTOM_INSTRUCTIONS_DIRS: inherited ? `${inherited},${dir}` : dir } }
+}
+
 const cleared = new Map<string, Promise<void>>()
 
-/** One file per chat, rewritten at each launch. Stdio children never outlive the host, and one host
- *  holds a profile, so the folder is cleared on its first use in a run. */
-export async function writeAcpInstructionsFile(
-  dataDirectory: string,
-  sessionId: string,
-  text: string
-): Promise<string> {
+/** Stdio children never outlive the host, and one host holds a profile, so the folder is cleared
+ *  on its first use in a run. */
+async function instructionsRoot(dataDirectory: string): Promise<string> {
   const root = join(dataDirectory, 'acp-instructions')
   let clearing = cleared.get(root)
   if (!clearing) {
@@ -80,12 +116,42 @@ export async function writeAcpInstructionsFile(
   }
   await clearing
   await mkdir(root, { recursive: true, mode: 0o700 })
-  const path = join(root, `${nativeChatScratchFolderName(sessionId)}.md`)
-  // Replaced whole, so a running child of the same chat never reads a half-written file.
+  return root
+}
+
+// Replaced whole, so a running child of the same chat never reads a half-written file.
+async function replaceFile(path: string, content: string): Promise<void> {
   const staged = `${path}.${randomUUID()}`
-  await writeFile(staged, text, { mode: 0o600 })
+  await writeFile(staged, content, { mode: 0o600 })
   await rename(staged, path)
+}
+
+/** One file per chat, rewritten at each launch. */
+export async function writeAcpInstructionsFile(
+  dataDirectory: string,
+  sessionId: string,
+  text: string
+): Promise<string> {
+  const path = join(
+    await instructionsRoot(dataDirectory),
+    `${nativeChatScratchFolderName(sessionId)}.md`
+  )
+  await replaceFile(path, text)
   return path
+}
+
+/** One folder per chat, its file rewritten at each launch; returns the folder. */
+export async function writeAcpInstructionsFolder(
+  dataDirectory: string,
+  sessionId: string,
+  path: string,
+  content: string
+): Promise<string> {
+  const dir = join(await instructionsRoot(dataDirectory), nativeChatScratchFolderName(sessionId))
+  const target = join(dir, path)
+  await mkdir(dirname(target), { recursive: true, mode: 0o700 })
+  await replaceFile(target, content)
+  return dir
 }
 
 /** Null for a session without instructions; throws when the agent cannot take them, so the session
@@ -93,7 +159,12 @@ export async function writeAcpInstructionsFile(
 export async function acpLaunchInstructions(
   spec: Pick<AcpLaunchSpec, 'agent' | 'instructions'>,
   dataDirectory: string,
-  input: { sessionId: string; text: string | null; env: Readonly<Record<string, string>> }
+  input: {
+    sessionId: string
+    text: string | null
+    env: Readonly<Record<string, string>>
+    cwd: string
+  }
 ): Promise<AcpInstructionsLaunch | null> {
   const { text } = input
   if (!text) {
@@ -102,7 +173,10 @@ export async function acpLaunchInstructions(
   const delivered = await spec.instructions?.({
     text,
     env: input.env,
-    file: () => writeAcpInstructionsFile(dataDirectory, input.sessionId, text)
+    cwd: input.cwd,
+    file: () => writeAcpInstructionsFile(dataDirectory, input.sessionId, text),
+    folder: (path, content) =>
+      writeAcpInstructionsFolder(dataDirectory, input.sessionId, path, content)
   })
   if (!delivered) {
     throw new Error(

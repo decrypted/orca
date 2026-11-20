@@ -64,10 +64,8 @@ export function WorkspacePortScanner({
   const detectionEnabled = settings !== null && isPortDetectionEnabled(settings)
   const enabled = sessionReady && detectionEnabled
   const repos = useAppStore((s) => s.repos)
-  const runtimeStatuses = useAppStore((s) => s.runtimeStatusByEnvironmentId)
-  const retiredEnvironmentIds = useMemo(
-    () => retiredEnvironmentIdsKey(runtimeStatuses),
-    [runtimeStatuses]
+  const retiredEnvironmentIds = useAppStore((s) =>
+    retiredEnvironmentIdsKey(s.runtimeStatusByEnvironmentId)
   )
   const hasWorktrees = useAppStore((state) =>
     getCachedHasAnyWorktrees(selectWorktreesByRepo(state))

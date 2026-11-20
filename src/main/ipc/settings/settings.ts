@@ -16,6 +16,7 @@ import {
   type SettingsChangedKey
 } from '../../../shared/telemetry/schemas/telemetry-property-schemas'
 import type { AgentAwakeService } from '../../power/agent-awake-service'
+import { applyComputerAwakeSettingsUpdate } from '../../power/computer-awake-settings-update'
 import { sanitizeFloatingWorkspaceDirectorySetting } from '../worktrees/floating-workspace-directory'
 import { applyAgentStatusHooksEnabled } from '../../agent-hooks/installation/managed-agent-hook-controls'
 import { isAgentStatusHooksEnabledForAgent } from '../../../shared/agent-hook-listener/configuration/agent-status-hooks-setting'
@@ -23,6 +24,7 @@ import { recordManagedHookInstallFailure } from '../../agent-hooks/installation/
 import { applyElectronProxySettings } from '../../network/proxy-settings'
 import { applyBrowserSessionProxies } from '../../browser/sessions/proxy/browser-session-proxy'
 import { applyProxyToElectronUpdaterSession } from '../../updater/lifecycle/electron-updater-proxy-session'
+import { applyAutomaticUpdatesSetting } from '../../updater/updater-service'
 import { browserSessionRegistry } from '../../browser/sessions/profiles/browser-session-registry'
 import { sanitizeNetworkSettings } from './network-settings-sanitization'
 import { normalizeAppIconId } from '../../../shared/app-lifecycle/identity/app-icon'
@@ -47,10 +49,6 @@ import {
   computerAwakeSettingsForSelection,
   readComputerAwakeSelection
 } from '../../../shared/app-lifecycle/computer-awake-mode'
-import {
-  COMPUTER_AWAKE_POWER_SETTING_KEYS,
-  readComputerAwakePowerPolicy
-} from '../../../shared/app-lifecycle/computer-awake-power-policy'
 import { resolveAiVaultSearchSettings } from '../../../shared/ai-vault/search/ai-vault-search-settings'
 import { applySessionSearchSettingsChange } from '../../ai-vault-search/session-search-enablement'
 import { getRuntimeEnvironmentRegistryRoot } from '../runtime-environments/catalog/runtime-environment-registry-root'
@@ -84,6 +82,7 @@ export function registerSettingsHandlers(
   })
 
   store.onSettingsChanged((updates, _settings, originWebContentsId) => {
+    applyAutomaticUpdatesSetting(updates.automaticUpdates)
     for (const window of BrowserWindow.getAllWindows()) {
       const isOrigin =
         originWebContentsId !== undefined && window.webContents.id === originWebContentsId
@@ -219,16 +218,7 @@ export function registerSettingsHandlers(
         console.warn('[settings] failed to apply network proxy settings to browser sessions')
       }
     }
-    if (
-      'computerAwakeMode' in sanitizedArgs ||
-      'keepComputerAwakeWhileAgentsRun' in sanitizedArgs
-    ) {
-      const computerAwake = readComputerAwakeSelection(result)
-      agentAwakeService?.setMode(computerAwake.mode, computerAwake.timer)
-    }
-    if (COMPUTER_AWAKE_POWER_SETTING_KEYS.some((key) => key in sanitizedArgs)) {
-      agentAwakeService?.setPowerPolicy(readComputerAwakePowerPolicy(result))
-    }
+    applyComputerAwakeSettingsUpdate(agentAwakeService, sanitizedArgs, result)
     await getClaudeAgentViewService().reconcile(result)
     const hookSettingChanged =
       ('agentStatusHooksEnabled' in sanitizedArgs &&

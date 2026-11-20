@@ -216,7 +216,7 @@ function SectionHeading({ section }: { section: WorkspaceViewSection }): JSX.Ele
     case 'show':
       return (
         <DropdownMenuLabel>
-          {t('auto.components.sidebar.SidebarWorkspaceOptionsMenu.showSection', 'Show')}
+          {t('auto.components.sidebar.SidebarWorkspaceOptionsMenu.selectionSection', 'Selection')}
         </DropdownMenuLabel>
       )
     case 'group':
@@ -243,7 +243,6 @@ export function WorkspaceOptionsMenuItems({
 }: {
   preserveWorkspaceBoardOpen?: boolean
 }): JSX.Element {
-  const t = useTranslate()
   const repoCount = useAppStore((s) => s.repos.length)
   const groupBy = useAppStore((s) => s.groupBy)
   const showSleepingWorkspaces = useAppStore((s) => s.showSleepingWorkspaces)
@@ -270,12 +269,6 @@ export function WorkspaceOptionsMenuItems({
 
   return (
     <>
-      <DropdownMenuLabel className="pb-0 text-sm text-foreground">
-        {t(
-          'auto.components.sidebar.SidebarWorkspaceOptionsMenu.workspaceOptions',
-          'Workspace options'
-        )}
-      </DropdownMenuLabel>
       {sections.map(({ section, options }, index) => (
         <Fragment key={section}>
           {index > 0 && <DropdownMenuSeparator />}

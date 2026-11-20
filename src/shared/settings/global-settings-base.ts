@@ -35,6 +35,15 @@ import type { PortDetectionSettings } from '../workspace/ports/port-detection-se
 import type { RemoteHostAutoConnectSettings } from '../remote-runtime/ssh/remote-host-auto-connect-settings'
 import type { ReduceMotionSettings } from '../accessibility/reduce-motion-settings'
 
+type DesktopWindowSettings = {
+  /** Windows-only: close (X) hides to tray instead of quitting; the tray icon is always present regardless. */
+  minimizeToTrayOnClose?: boolean
+  /** macOS: toggles the additive menu-bar entry (Orca survives last-window close); doesn't change Dock behavior. */
+  showMenuBarIcon?: boolean
+  /** Linux: disables titlebar dragging and keeps only the close button. */
+  linuxTilingWindowMode?: boolean
+}
+
 /** Settings groups owned by their feature modules and composed into GlobalSettings. */
 export type GlobalSettingsBase = AntigravityChatAuthSettings &
   EmulatorOpeningSettings &
@@ -57,6 +66,7 @@ export type GlobalSettingsBase = AntigravityChatAuthSettings &
   TerminalScrollSettings &
   TerminalColorOverrideGlobalSettings &
   WindowMaterialSettings &
+  DesktopWindowSettings &
   ReduceMotionSettings &
   EditorSaveSettings &
   BotsGlobalSettings &

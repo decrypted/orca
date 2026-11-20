@@ -33,6 +33,7 @@ import {
   isRuntimeEnvironmentManuallyDisconnected
 } from './runtime-environment-manual-disconnect'
 import { callRuntimeEnvironment } from '../requests/runtime-environment-transport-routing'
+import { rendererOrchestrationEnvelope } from '../connections/runtime-environment-shared-control-envelope'
 import { getRuntimeEnvironmentStatus } from '../status/runtime-environment-status-probe'
 import { publicRuntimeEnvironmentWithHostKey } from '../catalog/runtime-environment-host-key'
 import { withWslOrcadAccountEnv } from '../../../wsl/orcad/wsl-orcad-account-env'
@@ -196,7 +197,7 @@ function registerPassiveStatusHandler(getUserDataPath: () => string): void {
     'runtimeEnvironments:getStatus',
     async (
       _event,
-      args: { selector: string; timeoutMs?: number; observeOnly?: true }
+      args: { selector: string; timeoutMs?: number; observeOnly?: true; force?: true }
     ): Promise<RuntimeRpcResponse<RuntimeStatus>> => {
       const environment = await resolveEnvironment(getUserDataPath(), args.selector)
       if (isRuntimeEnvironmentManuallyDisconnected(environment.id)) {
@@ -206,7 +207,7 @@ function registerPassiveStatusHandler(getUserDataPath: () => string): void {
         getUserDataPath(),
         environment.id,
         args.timeoutMs,
-        args.observeOnly ? { observeOnly: true } : undefined
+        { observeOnly: args.observeOnly, force: args.force }
       )
       observeWslOrcadHostResponse(environment.id, 'status.get', response)
       return isRuntimeEnvironmentManuallyDisconnected(environment.id)
@@ -278,7 +279,7 @@ function registerPassiveCallHandler(
           accounts.params,
           args.timeoutMs,
           args.expectedEnvironmentPairingRevision,
-          undefined,
+          rendererOrchestrationEnvelope(args.method, accounts.params),
           { expectedEnvironmentRuntimeId: args.expectedEnvironmentRuntimeId }
         )
       } catch (error) {
