@@ -19,7 +19,7 @@ import {
 } from '@/lib/workspace/creation/worktree-creation-flow-startup'
 import {
   formatWorkspaceCreateError,
-  getWorkspaceCreateErrorToastMessage
+  getWorkspaceCreateErrorNotice
 } from '@/lib/workspace/creation/workspace-create-error-format'
 
 type ContinueBackgroundWorktreeCreationOptions = {
@@ -35,8 +35,12 @@ function startWorktreeCreation(creationId: string, request: WorktreeCreationRequ
     if (!store.pendingWorktreeCreations[creationId]) {
       return
     }
-    const message = getWorkspaceCreateErrorToastMessage(formatWorkspaceCreateError(error))
-    showWorktreeCreationError(store, creationId, originView, message)
+    showWorktreeCreationError(
+      store,
+      creationId,
+      originView,
+      getWorkspaceCreateErrorNotice(formatWorkspaceCreateError(error))
+    )
   })
 }
 
@@ -137,6 +141,7 @@ export function continueBackgroundWorktreeCreation(
     status: 'creating',
     startedAt: Date.now(),
     error: undefined,
+    errorHelp: undefined,
     provisioningLog: undefined,
     checkoutProgress: undefined,
     request
@@ -159,7 +164,11 @@ export function retryBackgroundWorktreeCreation(creationId: string): void {
     return
   }
   if (entry.chatInputHandedOff && entry.worktreeId) {
-    store.updatePendingWorktreeCreation(creationId, { status: 'creating', error: undefined })
+    store.updatePendingWorktreeCreation(creationId, {
+      status: 'creating',
+      error: undefined,
+      errorHelp: undefined
+    })
     store.setActivePendingWorktreeCreation(creationId)
     store.setActiveView('terminal')
     void retryCreatedWorktreeChat(creationId, entry.worktreeId, entry.request)
@@ -171,6 +180,7 @@ export function retryBackgroundWorktreeCreation(creationId: string): void {
     startedAt: Date.now(),
     phase: getInitialWorktreeCreationPhase(entry.request),
     error: undefined,
+    errorHelp: undefined,
     provisioningLog: undefined,
     environmentCheck: undefined,
     checkoutProgress: undefined,

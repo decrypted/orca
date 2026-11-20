@@ -47,6 +47,7 @@ export function WorktreeSetupSteps({
   steps,
   agentLabel,
   error,
+  errorHelp,
   onRetry,
   onDismiss
 }: {
@@ -54,6 +55,7 @@ export function WorktreeSetupSteps({
   agentLabel: string
   /** Set once creation failed; the card then says why and offers Retry. */
   error: string | null
+  errorHelp?: string
   onRetry: () => void
   onDismiss: () => void
 }): React.JSX.Element {
@@ -98,6 +100,9 @@ export function WorktreeSetupSteps({
       {error !== null ? (
         <div className="mt-1 flex flex-col gap-2 border-t border-border pt-2">
           <p className="break-words text-xs text-muted-foreground">{error}</p>
+          {errorHelp ? (
+            <p className="break-words text-xs text-muted-foreground">{errorHelp}</p>
+          ) : null}
           <div className="flex items-center gap-1.5">
             <Button type="button" variant="outline" size="xs" onClick={onRetry}>
               <RotateCcw />

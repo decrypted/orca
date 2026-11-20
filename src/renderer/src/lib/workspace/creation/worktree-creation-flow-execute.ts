@@ -12,7 +12,7 @@ import { getProvisionedRootCreateOptions } from '@/lib/workspace/creation/provis
 import { releaseVmCreateCheckout } from '@/runtime/ephemeral-vm/vm-create-hidden-checkouts'
 import {
   formatWorkspaceCreateError,
-  getWorkspaceCreateErrorToastMessage
+  getWorkspaceCreateErrorNotice
 } from '@/lib/workspace/creation/workspace-create-error-format'
 import type { CreatedWorktreeResult } from '@/store/slices/worktrees/create/worktree-create-payload'
 import type { WorktreeCreationRequest } from '@/lib/workspace/creation/pending-worktree-creation'
@@ -131,12 +131,11 @@ export async function executeWorktreeCreation(
     if (recoverWorktreeLegacyPreparation(creationId, preparedRequest, error)) {
       return
     }
-    const message = getWorkspaceCreateErrorToastMessage(formatWorkspaceCreateError(error))
     showWorktreeCreationError(
       useAppStore.getState(),
       creationId,
       originView,
-      message,
+      getWorkspaceCreateErrorNotice(formatWorkspaceCreateError(error)),
       preparedRequest.ephemeralVmRecipe ? request : undefined
     )
     return

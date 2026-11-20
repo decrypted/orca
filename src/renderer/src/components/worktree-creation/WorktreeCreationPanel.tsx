@@ -105,6 +105,9 @@ export default function WorktreeCreationPanel({
             >
               {t('auto.components.worktree.creation.WorktreeCreationPanel.dabd226118', 'Dismiss')}
             </button>
+            {entry.errorHelp ? (
+              <p className="max-w-3xl basis-full text-muted-foreground">{entry.errorHelp}</p>
+            ) : null}
           </div>
         ) : (
           <div className="flex min-h-0 max-w-3xl flex-col gap-2 text-xs text-muted-foreground">
