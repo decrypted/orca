@@ -2,6 +2,7 @@ import type { SettingsSearchEntry } from '../../search/settings-search'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { translate } from '@/i18n/i18n'
 import { translateSearchKeyword } from '../../search/settings-search-keywords'
+import { getRemoteHostAutoConnectSearchEntry } from '../../remote-host-auto-connect/remote-host-auto-connect-search'
 
 export const getBackgroundActivitySearchEntry = createLocalizedCatalog(
   () =>
@@ -42,7 +43,8 @@ export const getBackgroundActivitySearchEntry = createLocalizedCatalog(
             'remote'
           )
         ]
-      }
+      },
+      remoteHostAutoConnect: getRemoteHostAutoConnectSearchEntry()
     }) satisfies Record<string, SettingsSearchEntry>
 )
 

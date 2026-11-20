@@ -15,10 +15,7 @@ import {
   type PublicKnownRuntimeEnvironment,
   type RuntimeEnvironmentRemoval
 } from '../../../../shared/remote-runtime/host-catalog/runtime-environments'
-import {
-  connectThroughOwningService,
-  removeThroughOwningService
-} from './runtime-environment-host-service-ops'
+import { removeThroughOwningService } from './runtime-environment-host-service-ops'
 import type { RuntimeRpcResponse } from '../../../../shared/remote-runtime/rpc/runtime-rpc-envelope'
 import type { RuntimeStatus } from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import type { Store } from '../../../persistence/loading-store/store'
@@ -38,15 +35,13 @@ import {
 import { callRuntimeEnvironment } from '../requests/runtime-environment-transport-routing'
 import { rendererOrchestrationEnvelope } from '../connections/runtime-environment-shared-control-envelope'
 import { getRuntimeEnvironmentStatus } from '../status/runtime-environment-status-probe'
-import { noteRuntimeEnvironmentConnectRequested } from '../pairing/runtime-environment-pairing-refusal-registry'
 import { publicRuntimeEnvironmentWithHostKey } from '../catalog/runtime-environment-host-key'
 import { withWslOrcadAccountEnv } from '../../../wsl/orcad/wsl-orcad-account-env'
-import { clearSshCredentialDeclinedForEnvironment } from '../../../ssh/authentication/ssh-credential-decline'
 import {
   disconnectManagedHostOfEnvironmentForUser,
-  disconnectRuntimeEnvironmentForUser,
-  liftSshUserDisconnectForEnvironment
+  disconnectRuntimeEnvironmentForUser
 } from '../../ssh/ssh-host-user-disconnect'
+import { connectRuntimeEnvironmentForUser } from './runtime-environment-user-connect'
 import {
   observeWslOrcadHostResponse,
   wslOrcadHostSupports
@@ -177,14 +172,7 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
     ): Promise<RuntimeRpcResponse<RuntimeStatus>> => {
       const environment = await resolveEnvironment(getUserDataPath(), args.selector)
       assertWslHostReachable(environment)
-      clearRuntimeEnvironmentManualDisconnect(environment.id)
-      noteRuntimeEnvironmentConnectRequested(environment.id)
-      clearSshCredentialDeclinedForEnvironment(environment)
-      await liftSshUserDisconnectForEnvironment(environment)
-      await connectThroughOwningService(environment)
-      return getRuntimeEnvironmentStatus(getUserDataPath(), environment.id, args.timeoutMs, {
-        reconnect: true
-      })
+      return connectRuntimeEnvironmentForUser(getUserDataPath(), environment, args.timeoutMs)
     }
   )
 }

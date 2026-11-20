@@ -25,6 +25,7 @@ import {
 } from './ssh-connect-attempt-registry'
 import { resetSshCredentialDeclinesForTests } from '../../ssh/authentication/ssh-credential-decline'
 import { resetSshUserDisconnectsForTests } from '../../ssh/connection/ssh-user-disconnect'
+import { resetRemoteHostAutoConnectForTests } from './remote-host-auto-connect-hold'
 import { registerPlainSshTerminalHandlers } from './plain-ssh-terminal-handlers'
 import { unregisterPowerMonitorReconnect } from './ssh-host-sleep-reconnect'
 import {
@@ -146,6 +147,7 @@ export async function resetSshHandlerStateForTests(): Promise<void> {
   resetSshCredentialDeclinesForTests()
   resetSshUserDisconnectsForTests()
   resetLaunchReconnectOptOutsForTests()
+  resetRemoteHostAutoConnectForTests()
   quitTeardownStartGate.resetForTests()
   resetSshShutdownDrain()
 

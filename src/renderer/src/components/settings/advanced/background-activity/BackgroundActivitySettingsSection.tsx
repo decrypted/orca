@@ -6,6 +6,7 @@ import { matchesSettingsSearch } from '../../search/settings-search'
 import { SearchableSetting } from '../../section-layout/SearchableSetting'
 import { SettingsGroup } from '../../section-layout/SettingsGroup'
 import { SettingsSwitchRow } from '../../form-controls/SettingsFormControls'
+import { RemoteHostAutoConnectSetting } from '../../remote-host-auto-connect/RemoteHostAutoConnectSetting'
 import {
   getBackgroundActivityGroupSearchEntry,
   getBackgroundActivitySearchEntries,
@@ -26,7 +27,7 @@ export function BackgroundActivitySettingsSection({
   const group = getBackgroundActivityGroupSearchEntry()
   // A search for the group itself lists every row in it.
   const groupMatches = matchesSettingsSearch(query, group)
-  const portDetection = getBackgroundActivitySearchEntry().portDetection
+  const { portDetection } = getBackgroundActivitySearchEntry()
   const portDetectionEnabled = isPortDetectionEnabled(settings)
   return (
     <SettingsGroup title={group.title} description={group.description}>
@@ -44,6 +45,12 @@ export function BackgroundActivitySettingsSection({
           onChange={() => updateSettings({ portDetectionEnabled: !portDetectionEnabled })}
         />
       </SearchableSetting>
+      <RemoteHostAutoConnectSetting
+        settings={settings}
+        updateSettings={updateSettings}
+        id="background-activity-remote-host-auto-connect"
+        forceVisible={groupMatches}
+      />
     </SettingsGroup>
   )
 }
