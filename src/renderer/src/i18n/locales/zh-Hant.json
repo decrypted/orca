@@ -4880,7 +4880,11 @@
             "ariaLabel": "{{title}}，{{status}}",
             "onDescription": "讓這台電腦持續處於喚醒狀態",
             "autoDescription": "代理程式工作時防止電腦進入睡眠狀態",
-            "offDescription": "允許正常的系統睡眠行為"
+            "offDescription": "允許正常的系統睡眠行為",
+            "timerHeading": "保持喚醒時間",
+            "pausedOnBattery": "使用電池中，已暫停",
+            "pausedLowBattery": "低於 {{percent}}，已暫停",
+            "batterySettings": "電池與螢幕蓋設定…"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "之前的連線關閉了",
@@ -11170,7 +11174,10 @@
           "modeDescriptionDefault": "選擇「開啟」、「代理程式」或「關閉」。代理程式模式會在代理程式工作時保持喚醒狀態。Orca 也會要求此裝置在合蓋時保持喚醒狀態，實際行為取決於其電源原則。",
           "lidNoteWindows": "合蓋行為遵循該裝置的電源設定。",
           "lidNoteMac": "開蓋時防止閒置休眠；合上蓋子仍會使此 Mac 進入睡眠狀態。",
-          "lidNoteDefault": "Orca 也會要求此裝置在合蓋時保持喚醒狀態，實際行為取決於其電源原則。"
+          "lidNoteDefault": "Orca 也會要求此裝置在合蓋時保持喚醒狀態，實際行為取決於其電源原則。",
+          "timerUntil": "直到 {{time}}",
+          "modeDescriptionLidSleeps": "選擇開啟、代理程式或關閉。代理程式模式會在代理程式工作時保持喚醒。除非 logind 設定為遵守睡眠鎖定 (LidSwitchIgnoreInhibited=no)，否則闔上螢幕時這台裝置仍會進入睡眠。",
+          "lidNoteLidSleeps": "除非 logind 設定為遵守睡眠鎖定 (LidSwitchIgnoreInhibited=no)，否則闔上螢幕時這台裝置仍會進入睡眠。"
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "代理程式狀態鉤子",
@@ -12187,7 +12194,8 @@
         "AgentAwakeSetting": {
           "on": "開啟",
           "auto": "代理程式",
-          "off": "關"
+          "off": "關",
+          "timerActive": "{{until}}，之後{{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "此執行環境的 GitHub CLI 對於帳戶綁定來說太舊（需要 gh ≥ 2.40）。",
@@ -13267,6 +13275,15 @@
           "shownPluginCount_one": "顯示 {{count}} 個符合的外掛，包括此外掛",
           "shownPluginCount_other": "顯示 {{count}} 個符合的外掛，包括此外掛",
           "samePublisher": "更多列為 {{value0}} 的外掛"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "僅在接上電源時",
+          "onlyWhilePluggedInDescription": "使用電池時電腦會正常睡眠；重新接上電源後會恢復保持喚醒。",
+          "floorLabel": "使用電池時，低於此電量暫停",
+          "floorDescription": "低於此電量時，電腦會正常睡眠，直到重新接上電源。",
+          "lidLabel": "闔上螢幕時讓電腦進入睡眠",
+          "lidDescription": "關閉時，會在電源原則允許的範圍內要求這台裝置在闔上螢幕後保持喚醒。",
+          "windowsNoFloor": "Windows 不提供電量給 Orca，因此使用電池時電腦會在沒有電量下限的情況下保持喚醒。"
         }
       },
       "right": {

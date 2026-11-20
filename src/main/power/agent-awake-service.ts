@@ -2,11 +2,19 @@ import { powerMonitor, powerSaveBlocker } from 'electron'
 import {
   normalizeComputerAwakeMode,
   type ComputerAwakeMode,
-  type ComputerAwakeStatus
+  type ComputerAwakeStatus,
+  type ComputerAwakeTimer
 } from '../../shared/app-lifecycle/computer-awake-mode'
 import { LinuxLidSleepAssertion } from './linux-lid-sleep-assertion'
 import { MacosSystemSleepAssertion } from './macos-system-sleep-assertion'
 import { AgentAwakeStatusLease, type AgentAwakeStatus } from './agent-awake-status-lease'
+import { ComputerAwakeTimerLease } from './computer-awake-timer-lease'
+import { ComputerAwakePowerGate } from './computer-awake-power-gate'
+import { createPowerSupplyReader, type PowerSupplyReader } from './power-supply-reader'
+import type {
+  ComputerAwakePause,
+  ComputerAwakePowerPolicy
+} from '../../shared/app-lifecycle/computer-awake-power-policy'
 
 type PowerSaveBlocker = {
   start: (type: 'prevent-app-suspension' | 'prevent-display-sleep') => number
@@ -18,11 +26,12 @@ type PlatformAwakeAssertion = {
   start: (reason: string) => boolean | void
   stop: (reason: string) => void
   dispose: () => void
+  isAvailable?: () => boolean
 }
 
 type PowerMonitorEventSource = {
-  on: (event: 'resume', listener: () => void) => void
-  off: (event: 'resume', listener: () => void) => void
+  on: (event: 'resume' | 'on-ac' | 'on-battery', listener: () => void) => void
+  off: (event: 'resume' | 'on-ac' | 'on-battery', listener: () => void) => void
 }
 
 type Logger = Pick<Console, 'debug' | 'warn'>
@@ -33,12 +42,16 @@ type AgentAwakeServiceOptions = {
   logger?: Logger
   macosAssertion?: PlatformAwakeAssertion
   now?: () => number
+  /** Persists the mode a timed On returned to, so every window and the next launch agree. */
+  onTimerExpired?: (resumeMode: ComputerAwakeMode) => void
   platform?: NodeJS.Platform
   powerMonitor?: PowerMonitorEventSource | null
+  powerSupplyReader?: PowerSupplyReader
 }
 
 export class AgentAwakeService {
   private mode: ComputerAwakeMode = 'off'
+  private readonly onTimerExpired: ((resumeMode: ComputerAwakeMode) => void) | null
   private blockerId: number | null = null
   private readonly statusListeners = new Set<(status: ComputerAwakeStatus) => void>()
   private lastPublishedStatus: ComputerAwakeStatus | null = null
@@ -49,17 +62,22 @@ export class AgentAwakeService {
   private readonly platform: NodeJS.Platform
   private readonly now: () => number
   private readonly statusLease: AgentAwakeStatusLease
+  private readonly timerLease: ComputerAwakeTimerLease
+  private readonly powerGate: ComputerAwakePowerGate
   private readonly unsubscribeResume: (() => void) | null
 
   constructor(options: AgentAwakeServiceOptions = {}) {
     this.blocker = options.blocker ?? powerSaveBlocker
     this.logger = options.logger ?? console
     this.now = options.now ?? Date.now
+    this.onTimerExpired = options.onTimerExpired ?? null
     this.statusLease = new AgentAwakeStatusLease(this.now, () => this.refresh('stale-expiry'))
+    this.timerLease = new ComputerAwakeTimerLease(this.now, () => this.refresh('timer-expiry'))
     // Preventing Windows lid sleep requires changing the user’s global power plan.
     this.linuxAssertion =
       options.linuxAssertion ??
       new LinuxLidSleepAssertion({
+        blocksLidSwitch: () => !this.powerGate.getPolicy().lidCloseSleeps,
         logger: this.logger,
         now: this.now,
         onUnexpectedFailure: (reason) => this.refresh(reason)
@@ -73,8 +91,18 @@ export class AgentAwakeService {
       })
     this.platform = options.platform ?? process.platform
     const resumeSource = options.powerMonitor === undefined ? powerMonitor : options.powerMonitor
+    this.powerGate = new ComputerAwakePowerGate(
+      options.powerSupplyReader ?? createPowerSupplyReader(this.platform),
+      () => this.refresh('power-supply-change'),
+      this.logger,
+      resumeSource,
+      this.now
+    )
     if (resumeSource) {
-      const onResume = () => this.refresh('power-resume')
+      const onResume = () => {
+        this.refresh('power-resume')
+        this.timerLease.reschedule()
+      }
       resumeSource.on('resume', onResume)
       this.unsubscribeResume = () => resumeSource.off('resume', onResume)
     } else {
@@ -86,13 +114,37 @@ export class AgentAwakeService {
     this.setMode(enabled ? 'auto' : 'off')
   }
 
-  setMode(mode: ComputerAwakeMode): void {
+  setMode(mode: ComputerAwakeMode, timer: ComputerAwakeTimer | null = null): void {
     const normalized = normalizeComputerAwakeMode(mode)
-    if (this.mode === normalized) {
+    const nextTimer = normalized === 'on' ? timer : null
+    const currentTimer = this.timerLease.get()
+    if (
+      this.mode === normalized &&
+      currentTimer?.until === nextTimer?.until &&
+      currentTimer?.resumeMode === nextTimer?.resumeMode
+    ) {
       return
     }
     this.mode = normalized
+    this.timerLease.set(nextTimer)
     this.refresh('settings-change')
+  }
+
+  setPowerPolicy(policy: ComputerAwakePowerPolicy): void {
+    const current = this.powerGate.getPolicy()
+    if (
+      policy.onlyWhilePluggedIn === current.onlyWhilePluggedIn &&
+      policy.batteryFloorPercent === current.batteryFloorPercent &&
+      policy.lidCloseSleeps === current.lidCloseSleeps
+    ) {
+      return
+    }
+    if (policy.lidCloseSleeps !== current.lidCloseSleeps) {
+      // A held inhibitor keeps the lock it was spawned with; the next start takes the new one.
+      this.runAssertion('stop Linux lid sleep assertion', () => this.linuxAssertion.stop('lid'))
+    }
+    this.powerGate.setPolicy(policy)
+    this.refresh('power-policy-change')
   }
 
   setStatuses(statuses: AgentAwakeStatus[]): void {
@@ -113,17 +165,19 @@ export class AgentAwakeService {
     if (!this.statusLease.renew(status)) {
       return
     }
-    if (this.mode === 'auto' && this.lastPublishedStatus?.active !== true) {
+    const last = this.lastPublishedStatus
+    // A paused block stays released whatever the agents do, so only an idle Agent mode reacts.
+    if (this.mode === 'auto' && last?.active !== true && !last?.paused) {
       this.applyAwakeDecision('status-freshness', 1)
     }
   }
 
   getStatus(): ComputerAwakeStatus {
-    const workingAgentCount = this.getEligibleRunningStatusCount()
-    return {
-      mode: this.mode,
-      active: this.mode === 'on' || (this.mode === 'auto' && workingAgentCount > 0)
-    }
+    this.powerGate.primeBatteryAnswer()
+    const wanted = this.isBlockWanted(this.getEligibleRunningStatusCount())
+    const paused = wanted ? this.powerGate.getPause() : null
+    const active = wanted && !paused && !this.powerGate.isAwaitingFirstAnswer()
+    return this.buildStatus(active, paused)
   }
 
   /** Agents this runtime has seen working recently, independent of the awake setting. */
@@ -137,6 +191,8 @@ export class AgentAwakeService {
   }
 
   dispose(): void {
+    this.timerLease.dispose()
+    this.powerGate.dispose()
     this.statusLease.dispose()
     this.unsubscribeResume?.()
     this.stopBlocker('dispose')
@@ -145,34 +201,55 @@ export class AgentAwakeService {
   }
 
   private refresh(reason: string): void {
+    const resumeMode = this.timerLease.takeExpired()
+    if (resumeMode) {
+      this.mode = resumeMode
+      this.onTimerExpired?.(resumeMode)
+    }
     const runningStatusCount = this.getEligibleRunningStatusCount()
     this.applyAwakeDecision(reason, runningStatusCount)
   }
 
+  private isBlockWanted(runningStatusCount: number): boolean {
+    return this.mode === 'on' || (this.mode === 'auto' && runningStatusCount > 0)
+  }
+
   private applyAwakeDecision(reason: string, runningStatusCount: number): void {
-    const shouldBlock = this.mode === 'on' || (this.mode === 'auto' && runningStatusCount > 0)
+    const paused = this.powerGate.evaluate(this.isBlockWanted(runningStatusCount))
+    const shouldBlock =
+      this.isBlockWanted(runningStatusCount) && !paused && !this.powerGate.isAwaitingFirstAnswer()
     if (shouldBlock) {
-      const macosAssertionActive = this.startMacosAssertion(reason)
+      const macosAssertionActive = this.runAssertion('start macOS system sleep assertion', () =>
+        this.macosAssertion.start(reason)
+      )
       if (this.platform !== 'darwin' || !macosAssertionActive) {
         this.startBlocker(reason, runningStatusCount)
       } else {
         this.stopBlocker('macos-assertion-active', runningStatusCount)
       }
-      this.startLinuxAssertion(reason)
+      this.runAssertion('start Linux lid sleep assertion', () => this.linuxAssertion.start(reason))
     } else {
-      this.stopBlocker(reason, runningStatusCount)
-      this.stopMacosAssertion(reason)
-      this.stopLinuxAssertion(reason)
+      this.stopBlocker(paused ? `paused-${paused}` : reason, runningStatusCount)
+      this.runAssertion('stop macOS system sleep assertion', () => this.macosAssertion.stop(reason))
+      this.runAssertion('stop Linux lid sleep assertion', () => this.linuxAssertion.stop(reason))
     }
-    this.publishStatus(shouldBlock)
+    this.publishStatus(this.buildStatus(shouldBlock, paused))
   }
 
-  private publishStatus(active: boolean): void {
-    const status = { mode: this.mode, active }
-    if (
-      this.lastPublishedStatus?.mode === status.mode &&
-      this.lastPublishedStatus.active === status.active
-    ) {
+  private buildStatus(active: boolean, paused: ComputerAwakePause | null): ComputerAwakeStatus {
+    return {
+      mode: this.mode,
+      active,
+      ...(paused ? { paused } : {}),
+      hasBattery: this.powerGate.getHasBattery(),
+      lidInhibitAvailable:
+        this.platform === 'linux' && (this.linuxAssertion.isAvailable?.() ?? true)
+    }
+  }
+
+  private publishStatus(status: ComputerAwakeStatus): void {
+    // buildStatus fixes the key order, so equal statuses serialize equally.
+    if (JSON.stringify(this.lastPublishedStatus) === JSON.stringify(status)) {
       return
     }
     this.lastPublishedStatus = status
@@ -205,52 +282,12 @@ export class AgentAwakeService {
     }
   }
 
-  private startMacosAssertion(reason: string): boolean {
+  private runAssertion(action: string, run: () => boolean | void): boolean {
     try {
-      return this.macosAssertion.start(reason) !== false
+      return run() !== false
     } catch (err) {
-      this.logger.warn('[agent-awake] failed to start macOS system sleep assertion', {
-        reason,
-        mode: this.mode,
-        error: err
-      })
+      this.logger.warn(`[agent-awake] failed to ${action}`, { mode: this.mode, error: err })
       return false
-    }
-  }
-
-  private startLinuxAssertion(reason: string): void {
-    try {
-      this.linuxAssertion.start(reason)
-    } catch (err) {
-      this.logger.warn('[agent-awake] failed to start Linux lid sleep assertion', {
-        reason,
-        mode: this.mode,
-        error: err
-      })
-    }
-  }
-
-  private stopMacosAssertion(reason: string): void {
-    try {
-      this.macosAssertion.stop(reason)
-    } catch (err) {
-      this.logger.warn('[agent-awake] failed to stop macOS system sleep assertion', {
-        reason,
-        mode: this.mode,
-        error: err
-      })
-    }
-  }
-
-  private stopLinuxAssertion(reason: string): void {
-    try {
-      this.linuxAssertion.stop(reason)
-    } catch (err) {
-      this.logger.warn('[agent-awake] failed to stop Linux lid sleep assertion', {
-        reason,
-        mode: this.mode,
-        error: err
-      })
     }
   }
 

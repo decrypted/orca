@@ -1,7 +1,17 @@
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
-import type { ComputerAwakeMode } from '../../../../../../shared/app-lifecycle/computer-awake-mode'
+import { uiDateTimeFormat, uiNumberFormat } from '@/i18n/ui-intl-formatters'
+import type {
+  ComputerAwakeMode,
+  ComputerAwakeTimer
+} from '../../../../../../shared/app-lifecycle/computer-awake-mode'
 import { searchKeywords } from '../../search/settings-search-keywords'
+
+// Intl formatter caches key on option identity, so these must be module constants.
+const TIMER_END_FORMAT: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
+const PERCENT_FORMAT: Intl.NumberFormatOptions = { style: 'percent' }
+
+export const AGENT_AWAKE_SETTING_ID = 'agent-awake'
 
 const AGENT_AWAKE_TITLE_KEY = 'auto.components.settings.agent-awake-copy.modeTitle'
 const AGENT_AWAKE_DESCRIPTION_WINDOWS_KEY =
@@ -25,9 +35,23 @@ export function getAgentAwakeModeLabel(mode: ComputerAwakeMode, t: Translate = t
   return t('auto.components.settings.AgentAwakeSetting.off', 'Off')
 }
 
+export function getAgentAwakeTimerLabel(
+  timer: ComputerAwakeTimer,
+  t: Translate = translate
+): string {
+  return t('auto.components.settings.agent-awake-copy.timerUntil', 'Until {{time}}', {
+    time: uiDateTimeFormat(TIMER_END_FORMAT).format(timer.until)
+  })
+}
+
+export function formatAgentAwakeBatteryPercent(percent: number): string {
+  return uiNumberFormat(PERCENT_FORMAT).format(percent / 100)
+}
+
 export function getAgentAwakeDescription(
   userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent,
-  t: Translate = translate
+  t: Translate = translate,
+  lidCloseSleeps = true
 ): string {
   if (userAgent.includes('Windows')) {
     return t(
@@ -35,7 +59,7 @@ export function getAgentAwakeDescription(
       "Choose On, Agent, or Off. Agent mode stays awake while agents are working; lid-close behavior follows this device's power settings."
     )
   }
-  // macOS caffeinate can't hold a closed lid awake; Linux blocks logind's lid switch.
+  // macOS caffeinate can't hold a closed lid awake; Linux blocks logind's lid switch only on request.
   if (userAgent.includes('Mac')) {
     return t(
       AGENT_AWAKE_DESCRIPTION_MAC_KEY,
@@ -43,6 +67,12 @@ export function getAgentAwakeDescription(
     )
   }
 
+  if (lidCloseSleeps) {
+    return t(
+      'auto.components.settings.agent-awake-copy.modeDescriptionLidSleeps',
+      'Choose On, Agent, or Off. Agent mode stays awake while agents are working. Closing the lid still puts this device to sleep, unless logind is set to honor sleep locks (LidSwitchIgnoreInhibited=no).'
+    )
+  }
   return t(
     AGENT_AWAKE_DESCRIPTION_DEFAULT_KEY,
     'Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.'
@@ -51,7 +81,8 @@ export function getAgentAwakeDescription(
 
 export function getAgentAwakeLidNote(
   userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent,
-  t: Translate = translate
+  t: Translate = translate,
+  lidCloseSleeps = true
 ): string {
   if (userAgent.includes('Windows')) {
     return t(
@@ -63,6 +94,12 @@ export function getAgentAwakeLidNote(
     return t(
       'auto.components.settings.agent-awake-copy.lidNoteMac',
       'Prevents idle sleep with the lid open; closing the lid still puts this Mac to sleep.'
+    )
+  }
+  if (lidCloseSleeps) {
+    return t(
+      'auto.components.settings.agent-awake-copy.lidNoteLidSleeps',
+      'Closing the lid still puts this device to sleep, unless logind is set to honor sleep locks (LidSwitchIgnoreInhibited=no).'
     )
   }
   return t(

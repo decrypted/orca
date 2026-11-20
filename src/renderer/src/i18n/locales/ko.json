@@ -4063,7 +4063,11 @@
             "ariaLabel": "{{title}}, {{status}}",
             "onDescription": "이 컴퓨터가 절전 모드로 전환되지 않도록 항상 유지",
             "autoDescription": "에이전트가 작업하는 동안 절전 모드로 전환되지 않도록 유지",
-            "offDescription": "시스템의 기본 절전 동작 허용"
+            "offDescription": "시스템의 기본 절전 동작 허용",
+            "timerHeading": "절전 방지 시간",
+            "pausedOnBattery": "배터리 사용 중 일시 중지됨",
+            "pausedLowBattery": "{{percent}} 미만으로 일시 중지됨",
+            "batterySettings": "배터리 및 덮개 설정…"
           },
           "StatusBar": {
             "9659e38343": "포트",
@@ -10626,12 +10630,16 @@
           "modeDescriptionDefault": "켜짐, 에이전트 또는 꺼짐을 선택합니다. 에이전트 모드는 에이전트가 작업하는 동안 활성 상태를 유지합니다. Orca는 또한 전원 정책에 따라 덮개가 닫혀 있을 때 이 기기가 활성 상태를 유지하도록 요청합니다.",
           "lidNoteMac": "덮개를 연 상태에서는 유휴 절전을 방지합니다. 덮개를 닫으면 이 Mac이 절전 모드로 전환됩니다.",
           "lidNoteWindows": "뚜껑 닫기 동작은 이 장치의 전원 설정을 따릅니다.",
-          "lidNoteDefault": "Orca는 또한 전원 정책에 따라 뚜껑을 닫을 때 이 장치를 깨어 있도록 요청합니다."
+          "lidNoteDefault": "Orca는 또한 전원 정책에 따라 뚜껑을 닫을 때 이 장치를 깨어 있도록 요청합니다.",
+          "timerUntil": "{{time}}까지",
+          "modeDescriptionLidSleeps": "켜짐, 에이전트, 꺼짐 중에서 선택하세요. 에이전트 모드는 에이전트가 작업하는 동안 절전 모드를 방지합니다. logind가 절전 잠금을 따르도록 설정되지 않은 한 (LidSwitchIgnoreInhibited=no) 덮개를 닫으면 이 기기는 절전 모드로 전환됩니다.",
+          "lidNoteLidSleeps": "logind가 절전 잠금을 따르도록 설정되지 않은 한 (LidSwitchIgnoreInhibited=no) 덮개를 닫으면 이 기기는 절전 모드로 전환됩니다."
         },
         "AgentAwakeSetting": {
           "on": "켜짐",
           "auto": "에이전트",
-          "off": "꺼짐"
+          "off": "꺼짐",
+          "timerActive": "{{until}}, 이후 {{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "이 런타임의 GitHub CLI는 계정 바인딩을 지원하기에는 너무 오래되었습니다(gh ≥ 2.40 필요).",
@@ -12797,6 +12805,15 @@
           "shownPluginCount_one": "이 플러그인을 포함해 일치하는 플러그인 {{count}}개 표시 중",
           "shownPluginCount_other": "이 플러그인을 포함해 일치하는 플러그인 {{count}}개 표시 중",
           "samePublisher": "{{value0}}(으)로 등록된 다른 플러그인"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "전원 연결 시에만",
+          "onlyWhilePluggedInDescription": "배터리 전원에서는 평소처럼 절전 모드로 전환되며, 다시 전원에 연결하면 절전 방지가 재개됩니다.",
+          "floorLabel": "배터리 사용 시 일시 중지 기준",
+          "floorDescription": "이 충전량 아래에서는 다시 전원에 연결할 때까지 평소처럼 절전 모드로 전환됩니다.",
+          "lidLabel": "덮개를 닫으면 컴퓨터를 절전 모드로 전환",
+          "lidDescription": "끄면 전원 정책이 허용하는 범위에서 덮개를 닫아도 깨어 있도록 이 기기에 요청합니다.",
+          "windowsNoFloor": "Windows는 Orca에 충전량을 제공하지 않으므로 배터리 사용 시 충전량 제한 없이 절전 모드가 방지됩니다."
         }
       },
       "right": {

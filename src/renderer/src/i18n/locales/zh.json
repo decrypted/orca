@@ -4643,7 +4643,11 @@
             "ariaLabel": "{{title}}，{{status}}",
             "onDescription": "始终防止此电脑进入睡眠状态",
             "autoDescription": "代理工作时防止电脑进入睡眠状态",
-            "offDescription": "允许系统正常进入睡眠状态"
+            "offDescription": "允许系统正常进入睡眠状态",
+            "timerHeading": "防止休眠时长",
+            "pausedOnBattery": "使用电池，已暂停",
+            "pausedLowBattery": "低于 {{percent}}，已暂停",
+            "batterySettings": "电池和合盖设置…"
           },
           "StatusBar": {
             "9659e38343": "端口",
@@ -11344,12 +11348,16 @@
           "modeDescriptionDefault": "选择\"打开\"、\"代理\"或\"关闭\"，当代理工作时，代理模式保持唤醒状态，Orca 还要求该设备在盖子关闭时保持唤醒状态，具体取决于其电源策略",
           "lidNoteMac": "开盖时防止空闲休眠，合上盖子仍会使此 Mac 进入睡眠状态",
           "lidNoteWindows": "合盖行为遵循该设备的电源设置",
-          "lidNoteDefault": "Orca 还要求该设备在盖子关闭时保持唤醒状态，具体取决于其电源策略"
+          "lidNoteDefault": "Orca 还要求该设备在盖子关闭时保持唤醒状态，具体取决于其电源策略",
+          "timerUntil": "直到 {{time}}",
+          "modeDescriptionLidSleeps": "选择开启、代理或关闭。代理模式会在代理工作时防止休眠。除非 logind 设置为遵守睡眠锁 (LidSwitchIgnoreInhibited=no)，否则合上盖子时此设备仍会进入睡眠。",
+          "lidNoteLidSleeps": "除非 logind 设置为遵守睡眠锁 (LidSwitchIgnoreInhibited=no)，否则合上盖子时此设备仍会进入睡眠。"
         },
         "AgentAwakeSetting": {
           "on": "开启",
           "auto": "代理",
-          "off": "关闭"
+          "off": "关闭",
+          "timerActive": "{{until}}，之后{{mode}}"
         },
         "RepositoryGitHubAccountSection": {
           "unsupported": "此运行时的 GitHub CLI 版本过旧，不支持账户绑定（需要 gh ≥ 2.40）",
@@ -13627,6 +13635,15 @@
           "cancel": "取消",
           "confirm": "移除",
           "unknownHost": "未知主机"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "仅在接通电源时",
+          "onlyWhilePluggedInDescription": "使用电池时电脑会正常睡眠；重新接通电源后将恢复防止休眠。",
+          "floorLabel": "使用电池时，低于此电量暂停",
+          "floorDescription": "低于此电量时，电脑会正常睡眠，直到重新接通电源。",
+          "lidLabel": "合上盖子时让电脑睡眠",
+          "lidDescription": "关闭后，会在电源策略允许的范围内请求此设备在合盖时保持唤醒。",
+          "windowsNoFloor": "Windows 不向 Orca 提供电量信息，因此使用电池时电脑会在没有电量下限的情况下保持唤醒。"
         }
       },
       "right": {
