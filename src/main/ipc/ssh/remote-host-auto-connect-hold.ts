@@ -224,11 +224,3 @@ async function liftAutoConnectOffHolds(): Promise<void> {
   }
   await resumeRuntimeEnvironmentStatus(lifted)
 }
-
-export function resetRemoteHostAutoConnectForTests(): void {
-  stopFollowing?.()
-  stopFollowing = undefined
-  autoConnect = true
-  applying = Promise.resolve()
-  userConnectingHosts.clear()
-}
