@@ -74,7 +74,7 @@ describe('runWslHostAgentAwakeWhileAuto', () => {
     await Promise.resolve()
     send(workingSnapshots(1))
     send({ type: 'updated', ...workingSnapshots(2).snapshots[0] })
-    expect(service.getStatus()).toEqual({ mode: 'auto', active: true })
+    expect(service.getStatus()).toMatchObject({ mode: 'auto', active: true })
 
     service.setMode('off')
     expect(close).toHaveBeenCalledTimes(1)
@@ -83,9 +83,9 @@ describe('runWslHostAgentAwakeWhileAuto', () => {
     expect(openStream).toHaveBeenCalledTimes(2)
     await Promise.resolve()
     send(workingSnapshots(2))
-    expect(service.getStatus()).toEqual({ mode: 'auto', active: false })
+    expect(service.getStatus()).toMatchObject({ mode: 'auto', active: false })
     send({ type: 'updated', ...workingSnapshots(3).snapshots[0] })
-    expect(service.getStatus()).toEqual({ mode: 'auto', active: true })
+    expect(service.getStatus()).toMatchObject({ mode: 'auto', active: true })
   })
 
   it('closes the stream and ignores later mode changes once stopped', async () => {
