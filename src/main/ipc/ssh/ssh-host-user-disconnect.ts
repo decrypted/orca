@@ -175,10 +175,6 @@ export async function serversOfHeldTargets(
   })
 }
 
-export function resetLaunchReconnectOptOutsForTests(): void {
-  launchReconnectOptOutsHeld = undefined
-}
-
 /** Stop and remove persists across reloads and restarts: automatic dials must not deploy a new server. */
 export async function isManagedServerRemovalHeld(
   target: Pick<SshTarget, 'managedServerRemoved' | 'orcadFence'> | undefined

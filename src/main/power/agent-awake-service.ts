@@ -10,44 +10,20 @@ import { MacosSystemSleepAssertion } from './macos-system-sleep-assertion'
 import { AgentAwakeStatusLease, type AgentAwakeStatus } from './agent-awake-status-lease'
 import { ComputerAwakeTimerLease } from './computer-awake-timer-lease'
 import { ComputerAwakePowerGate } from './computer-awake-power-gate'
-import { createPowerSupplyReader, type PowerSupplyReader } from './power-supply-reader'
+import { createPowerSupplyReader } from './power-supply-reader'
+import type {
+  AgentAwakeLogger,
+  AgentAwakeServiceOptions,
+  PlatformAwakeAssertion,
+  PowerSaveBlocker
+} from './agent-awake-service-options'
 import type {
   ComputerAwakePause,
   ComputerAwakePowerPolicy
 } from '../../shared/app-lifecycle/computer-awake-power-policy'
 
-type PowerSaveBlocker = {
-  start: (type: 'prevent-app-suspension' | 'prevent-display-sleep') => number
-  stop: (id: number) => void
-  isStarted: (id: number) => boolean
-}
-
-type PlatformAwakeAssertion = {
-  start: (reason: string) => boolean | void
-  stop: (reason: string) => void
-  dispose: () => void
-  isAvailable?: () => boolean
-}
-
-type PowerMonitorEventSource = {
-  on: (event: 'resume' | 'on-ac' | 'on-battery', listener: () => void) => void
-  off: (event: 'resume' | 'on-ac' | 'on-battery', listener: () => void) => void
-}
-
-type Logger = Pick<Console, 'debug' | 'warn'>
-
-type AgentAwakeServiceOptions = {
-  blocker?: PowerSaveBlocker
-  linuxAssertion?: PlatformAwakeAssertion
-  logger?: Logger
-  macosAssertion?: PlatformAwakeAssertion
-  now?: () => number
-  /** Persists the mode a timed On returned to, so every window and the next launch agree. */
-  onTimerExpired?: (resumeMode: ComputerAwakeMode) => void
-  platform?: NodeJS.Platform
-  powerMonitor?: PowerMonitorEventSource | null
-  powerSupplyReader?: PowerSupplyReader
-}
+/** A pane working on a WSL host, stamped with this machine's receipt time, never the host's clock. */
+export type WslHostAwakeStatus = { paneKey: string; receivedAt: number }
 
 export class AgentAwakeService {
   private mode: ComputerAwakeMode = 'off'
@@ -57,11 +33,14 @@ export class AgentAwakeService {
   private lastPublishedStatus: ComputerAwakeStatus | null = null
   private readonly blocker: PowerSaveBlocker
   private readonly linuxAssertion: PlatformAwakeAssertion
-  private readonly logger: Logger
+  private readonly logger: AgentAwakeLogger
   private readonly macosAssertion: PlatformAwakeAssertion
   private readonly platform: NodeJS.Platform
   private readonly now: () => number
   private readonly statusLease: AgentAwakeStatusLease
+  // Why separate: WSL-host agents report through their host's session stream, not the local hook server.
+  private readonly wslHostStatusLease: AgentAwakeStatusLease
+  private readonly wslHostKeysByEnvironment = new Map<string, string[]>()
   private readonly timerLease: ComputerAwakeTimerLease
   private readonly powerGate: ComputerAwakePowerGate
   private readonly unsubscribeResume: (() => void) | null
@@ -72,6 +51,9 @@ export class AgentAwakeService {
     this.now = options.now ?? Date.now
     this.onTimerExpired = options.onTimerExpired ?? null
     this.statusLease = new AgentAwakeStatusLease(this.now, () => this.refresh('stale-expiry'))
+    this.wslHostStatusLease = new AgentAwakeStatusLease(this.now, () =>
+      this.refresh('stale-expiry')
+    )
     this.timerLease = new ComputerAwakeTimerLease(this.now, () => this.refresh('timer-expiry'))
     // Preventing Windows lid sleep requires changing the user’s global power plan.
     this.linuxAssertion =
@@ -117,12 +99,7 @@ export class AgentAwakeService {
   setMode(mode: ComputerAwakeMode, timer: ComputerAwakeTimer | null = null): void {
     const normalized = normalizeComputerAwakeMode(mode)
     const nextTimer = normalized === 'on' ? timer : null
-    const currentTimer = this.timerLease.get()
-    if (
-      this.mode === normalized &&
-      currentTimer?.until === nextTimer?.until &&
-      currentTimer?.resumeMode === nextTimer?.resumeMode
-    ) {
+    if (this.mode === normalized && this.timerLease.holds(nextTimer)) {
       return
     }
     this.mode = normalized
@@ -131,15 +108,10 @@ export class AgentAwakeService {
   }
 
   setPowerPolicy(policy: ComputerAwakePowerPolicy): void {
-    const current = this.powerGate.getPolicy()
-    if (
-      policy.onlyWhilePluggedIn === current.onlyWhilePluggedIn &&
-      policy.batteryFloorPercent === current.batteryFloorPercent &&
-      policy.lidCloseSleeps === current.lidCloseSleeps
-    ) {
+    if (this.powerGate.hasPolicy(policy)) {
       return
     }
-    if (policy.lidCloseSleeps !== current.lidCloseSleeps) {
+    if (policy.lidCloseSleeps !== this.powerGate.getPolicy().lidCloseSleeps) {
       // A held inhibitor keeps the lock it was spawned with; the next start takes the new one.
       this.runAssertion('stop Linux lid sleep assertion', () => this.linuxAssertion.stop('lid'))
     }
@@ -158,6 +130,32 @@ export class AgentAwakeService {
       this.statusLease.renew(status)
     }
     this.refresh('status-change')
+  }
+
+  /** Replace one WSL host's working agents; an empty list clears that host. */
+  setWslHostStatuses(environmentId: string, statuses: readonly WslHostAwakeStatus[]): void {
+    for (const key of this.wslHostKeysByEnvironment.get(environmentId) ?? []) {
+      this.wslHostStatusLease.remove(key)
+    }
+    const keys: string[] = []
+    const now = this.now()
+    for (const status of statuses) {
+      const key = `${environmentId}\0${status.paneKey}`
+      keys.push(key)
+      this.wslHostStatusLease.renew({
+        paneKey: key,
+        state: 'working',
+        // Why clamp: a future stamp would overflow the expiry timer and re-arm it every millisecond.
+        receivedAt: Math.min(status.receivedAt, now),
+        observedInCurrentRuntime: true
+      })
+    }
+    if (keys.length > 0) {
+      this.wslHostKeysByEnvironment.set(environmentId, keys)
+    } else {
+      this.wslHostKeysByEnvironment.delete(environmentId)
+    }
+    this.refresh('wsl-host-status-change')
   }
 
   /** Renew one accepted observation without rescanning every active agent. */
@@ -180,9 +178,10 @@ export class AgentAwakeService {
     return this.buildStatus(active, paused)
   }
 
-  /** Agents this runtime has seen working recently, independent of the awake setting. */
+  /** Local agents this runtime has seen working recently, independent of the awake setting.
+   *  WSL-host agents are left out: they run git inside their distro, not on this machine's repos. */
   getWorkingAgentCount(): number {
-    return this.getEligibleRunningStatusCount()
+    return this.statusLease.countEligible()
   }
 
   subscribe(listener: (status: ComputerAwakeStatus) => void): () => void {
@@ -194,6 +193,7 @@ export class AgentAwakeService {
     this.timerLease.dispose()
     this.powerGate.dispose()
     this.statusLease.dispose()
+    this.wslHostStatusLease.dispose()
     this.unsubscribeResume?.()
     this.stopBlocker('dispose')
     this.macosAssertion.dispose()
@@ -259,7 +259,7 @@ export class AgentAwakeService {
   }
 
   private getEligibleRunningStatusCount(): number {
-    return this.statusLease.countEligible()
+    return this.statusLease.countEligible() + this.wslHostStatusLease.countEligible()
   }
 
   private startBlocker(reason: string, runningStatusCount: number): void {

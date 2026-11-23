@@ -63,11 +63,7 @@ function activityLabel(
     : t('auto.components.status.bar.CaffeinateStatusSegment.inactive', 'Inactive')
 }
 
-export function CaffeinateStatusSegment({
-  iconOnly
-}: {
-  iconOnly: boolean
-}): React.JSX.Element | null {
+export function CaffeinateStatusSegment(): React.JSX.Element | null {
   const t = useTranslate()
   const settings = useAppStore((state) => state.settings)
   const updateSettings = useAppStore((state) => state.updateSettings)
@@ -119,7 +115,7 @@ export function CaffeinateStatusSegment({
               aria-label={ariaLabel}
             >
               <Coffee className={`size-3 ${active ? 'text-foreground' : ''}`} />
-              {!iconOnly ? <span className="text-[11px] font-medium">{modeLabel}</span> : null}
+              <span className="text-[11px] font-medium">{modeLabel}</span>
               <span
                 aria-hidden
                 className={`size-1.5 rounded-full ${

@@ -1,7 +1,7 @@
 // ACP has no standard channel for standing instructions; each agent takes them its own way.
 
 import { randomUUID } from 'node:crypto'
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readdir, rename, rm, rmdir, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import { nativeChatScratchFolderName } from '../../native-chat/conversation-files/native-chat-scratch-folder'
@@ -10,7 +10,12 @@ import type { AcpLaunchSpec } from './acp-launch-contract'
 import type { InitializeResponse } from '../generated/acp-protocol.generated'
 import { acpAgentName } from '../session/acp-structured-agent-definitions'
 import { placeCursorOpeningRule } from '../../cursor/cursor-opening-rule'
-import { writeHermesContextFile } from '../../hermes/hermes-context-file'
+import { writeFolderContextFile } from './acp-folder-context-file'
+import {
+  openCodeSourceConfigDirectory,
+  openCodeTakesConfigDirInstructions,
+  writeOpenCodeInstructionsConfigDir
+} from '../../opencode/opencode-instructions-config-dir'
 
 /** What a launch adds so the agent's own system prompt carries the instructions. */
 export type AcpInstructionsLaunch = {
@@ -23,8 +28,12 @@ export type AcpInstructionsLaunch = {
   sessionMetaOnReopen?: true
   /** Whether the agent's `initialize` says it takes `sessionMeta`; a session it doesn't never opens. */
   takesSessionMeta?: (initialized: InitializeResponse) => boolean
+  /** An agent that doesn't take `sessionMeta` starts without it instead of refusing to start. */
+  sessionMetaOptional?: true
   /** Runs around `session/new` (never a reopen) in the session's folder; returns what undoes it. */
   aroundNewSession?: (cwd: string) => Promise<() => Promise<void>>
+  /** Removes what this launch wrote once its child has exited or the launch is abandoned. */
+  release?: () => Promise<void>
 }
 
 export type AcpInstructionsDelivery = (input: {
@@ -34,10 +43,14 @@ export type AcpInstructionsDelivery = (input: {
   /** Writes `content` at `path` inside a folder of this chat's own that only this host's user can
    *  read, and returns the folder. */
   folder: (path: string, content: string) => Promise<string>
+  /** Makes a new, empty folder only this host's user can read, for this launch, and returns its path. */
+  emptyFolder: () => Promise<string>
   /** What the child will see, inherited values included. */
   env: Readonly<Record<string, string>>
   /** The folder the agent runs in, on this host. */
   cwd: string
+  /** The launched program's version; null when its check could not tell. */
+  version: string | null
 }) => Promise<AcpInstructionsLaunch | null>
 
 // Grok keeps them with the session, so a reopened conversation keeps the preamble it began with.
@@ -61,15 +74,55 @@ export const deliverAntigravityInstructions: AcpInstructionsDelivery = async ({ 
   takesSessionMeta: antigravityTakesSystemPrompt
 })
 
-/** Appended to the user's own inline instructions, never replacing them. */
-export const deliverOpenCodeInstructions: AcpInstructionsDelivery = async ({ file, env }) => {
-  const content = withOpenCodeInstructionsFile(env.OPENCODE_CONFIG_CONTENT, await file())
-  return content === null ? null : { env: { OPENCODE_CONFIG_CONTENT: content } }
+/** OpenCode 1.x and its forks: appended to the user's own inline instructions in `variable`, never
+ *  replacing them. */
+function inlineConfigInstructions(variable: string): AcpInstructionsDelivery {
+  return async ({ env, file }) => {
+    const content = withOpenCodeInstructionsFile(env[variable], await file())
+    return content === null ? null : { env: { [variable]: content } }
+  }
 }
 
-// A path keeps the text out of the process list and clear of argument-length limits.
-export const deliverOmpInstructions: AcpInstructionsDelivery = async ({ file }) => ({
+const deliverOpenCode1Instructions = inlineConfigInstructions('OPENCODE_CONFIG_CONTENT')
+export const deliverKiloInstructions = inlineConfigInstructions('KILO_CONFIG_CONTENT')
+export const deliverMimoInstructions = inlineConfigInstructions('MIMOCODE_CONFIG_CONTENT')
+
+/** 1.x: as its forks. 2.x ignores inline instructions, so they follow the user's own global
+ *  AGENTS.md in a config folder that links the rest of theirs. */
+export const deliverOpenCodeInstructions: AcpInstructionsDelivery = async (
+  input
+): Promise<AcpInstructionsLaunch | null> => {
+  const { text, emptyFolder, env, version } = input
+  if (openCodeTakesConfigDirInstructions(version)) {
+    const configDir = await emptyFolder()
+    const release = () => removeTreeKeepingLinkTargets(configDir)
+    await writeOpenCodeInstructionsConfigDir(
+      configDir,
+      openCodeSourceConfigDirectory(env),
+      text
+    ).catch(async (error: unknown) => {
+      await release()
+      throw error
+    })
+    return { env: { OPENCODE_CONFIG_DIR: configDir }, release }
+  }
+  return deliverOpenCode1Instructions(input)
+}
+
+// OMP and Auggie, both built on Pi, read the file; a path keeps the text out of the process list
+// and clear of argument-length limits.
+export const deliverAppendSystemPromptInstructions: AcpInstructionsDelivery = async ({ file }) => ({
   args: [`--append-system-prompt=${await file()}`]
+})
+
+// Kiro keeps steering sent on `session/new` with the session, so a reopen keeps the preamble it began with.
+export const deliverKiroInstructions: AcpInstructionsDelivery = async ({ text }) => ({
+  sessionMeta: { kiro: { steering: [{ name: 'orca', inclusion: 'always', content: text }] } }
+})
+
+// Droid rebuilds its system prompt at every start from the file each launch passes.
+export const deliverDroidInstructions: AcpInstructionsDelivery = async ({ file }) => ({
+  args: ['--append-system-prompt-file', await file()]
 })
 
 // Cursor reads its folder's rules once, when a session opens, and keeps them across reopens.
@@ -78,9 +131,61 @@ export const deliverCursorInstructions: AcpInstructionsDelivery = async ({ text 
 })
 
 // Hermes builds its system prompt from the folder's `.hermes.md` at the first turn and again at
-// each compaction, so the file stays; every launch rewrites it with the current text.
+// each compaction, so the file stays; every launch rewrites it with the current text. Only Hermes
+// reads it, ahead of AGENTS.md.
 export const deliverHermesInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
-  await writeHermesContextFile(cwd, text)
+  await writeFolderContextFile(cwd, '.hermes.md', 'Hermes', text)
+  return {}
+}
+
+// Kimi builds its system prompt from the folder's AGENTS.md files at `session/new` and keeps it
+// across reopens and compactions. Only Kimi reads `.kimi-code/AGENTS.md`; it stays, because a
+// running Kimi treats a removed one as stale and stops following it.
+export const deliverKimiInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
+  await writeFolderContextFile(cwd, join('.kimi-code', 'AGENTS.md'), 'Kimi', text)
+  return {}
+}
+
+// Goose takes no system prompt over ACP and rebuilds its own from the folder's `.goosehints` before
+// every model call, so a reopened chat reads what its latest launch wrote (checked live on 1.60.2).
+export const deliverGooseInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
+  await writeFolderContextFile(cwd, '.goosehints', 'Goose', text)
+  return {}
+}
+
+// Gemini ignores `_meta` and builds its context from the folder's GEMINI.md at every start, a
+// reopen and each compression included, but reads it only in a trusted folder, so the launch trusts it.
+export const deliverGeminiInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
+  await writeFolderContextFile(cwd, 'GEMINI.md', 'Gemini', text)
+  return { env: { GEMINI_CLI_TRUST_WORKSPACE: 'true' } }
+}
+
+// Qwen rebuilds its system prompt from the folder's QWEN.md at every start, reopens included
+// (checked live on 0.28.0), so every launch rewrites it with the current text.
+export const deliverQwenCodeInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
+  await writeFolderContextFile(cwd, 'QWEN.md', 'Qwen Code', text)
+  return {}
+}
+
+// Cline rebuilds its system prompt from the folder's rules at every start, reopens included
+// (checked live on 3.0.75); `.cline/rules` sits beside the user's own `.clinerules`.
+export const deliverClineInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
+  await writeFolderContextFile(cwd, join('.cline', 'rules', 'orca.md'), 'Cline', text)
+  return {}
+}
+
+// Devin reads the folder's AGENTS.local.md as an always-on rule at `session/new` and keeps it with
+// the session, so a reopened chat keeps the text it began with (checked live on 3000.14.30821).
+export const deliverDevinInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
+  await writeFolderContextFile(cwd, 'AGENTS.local.md', 'Devin', text)
+  return {}
+}
+
+// CodeBuddy rebuilds its system prompt from the folder's CODEBUDDY.local.md at every start, reopens
+// included (checked live on 2.185.0). Its --append-system-prompt takes only inline text, which a
+// grown bot preamble would push past Windows' command-line limit.
+export const deliverCodeBuddyInstructions: AcpInstructionsDelivery = async ({ text, cwd }) => {
+  await writeFolderContextFile(cwd, 'CODEBUDDY.local.md', 'CodeBuddy', text)
   return {}
 }
 
@@ -154,6 +259,42 @@ export async function writeAcpInstructionsFolder(
   return dir
 }
 
+/** Removes a tree, unlinking links and junctions rather than descending into them (#1083). */
+async function removeTreeKeepingLinkTargets(path: string): Promise<void> {
+  const stats = await lstat(path).catch(() => null)
+  if (!stats) {
+    return
+  }
+  if (stats.isSymbolicLink() || !stats.isDirectory()) {
+    await unlink(path).catch(() => undefined)
+    return
+  }
+  for (const name of await readdir(path).catch(() => [])) {
+    await removeTreeKeepingLinkTargets(join(path, name))
+  }
+  await rmdir(path).catch(() => undefined)
+}
+
+const clearedFolders = new Map<string, Promise<void>>()
+
+/** A new folder per launch, so a child still running from an earlier one keeps reading its own.
+ *  Folders may link into the user's files, so clearing never follows a link (#1083). */
+export async function makeAcpInstructionsFolder(
+  dataDirectory: string,
+  sessionId: string
+): Promise<string> {
+  const root = join(dataDirectory, 'acp-instructions-folders')
+  let clearing = clearedFolders.get(root)
+  if (!clearing) {
+    clearing = removeTreeKeepingLinkTargets(root)
+    clearedFolders.set(root, clearing)
+  }
+  await clearing
+  const path = join(root, `${nativeChatScratchFolderName(sessionId)}-${randomUUID()}`)
+  await mkdir(path, { recursive: true, mode: 0o700 })
+  return path
+}
+
 /** Null for a session without instructions; throws when the agent cannot take them, so the session
  *  never starts without them. */
 export async function acpLaunchInstructions(
@@ -164,6 +305,7 @@ export async function acpLaunchInstructions(
     text: string | null
     env: Readonly<Record<string, string>>
     cwd: string
+    version?: string | null
   }
 ): Promise<AcpInstructionsLaunch | null> {
   const { text } = input
@@ -176,7 +318,9 @@ export async function acpLaunchInstructions(
     cwd: input.cwd,
     file: () => writeAcpInstructionsFile(dataDirectory, input.sessionId, text),
     folder: (path, content) =>
-      writeAcpInstructionsFolder(dataDirectory, input.sessionId, path, content)
+      writeAcpInstructionsFolder(dataDirectory, input.sessionId, path, content),
+    emptyFolder: () => makeAcpInstructionsFolder(dataDirectory, input.sessionId),
+    version: input.version ?? null
   })
   if (!delivered) {
     throw new Error(

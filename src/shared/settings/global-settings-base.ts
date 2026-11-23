@@ -7,9 +7,12 @@ import type { WorktreeCardDisplaySettings } from '../worktree/card-display-setti
 import type { BrowserLinkOpeningSettings } from '../browser/navigation/browser-link-opening-settings'
 import type { BrowserPasswordsGlobalSettings } from '../browser/passwords/browser-passwords-types'
 import type { BrowserMemorySaverGlobalSettings } from '../browser/guest-lifecycle/browser-memory-saver'
+import type { PerfNoticeGlobalSettings } from '../perf-notices/perf-notice-settings'
 import type { ClaudeAccountSwitchSettings } from '../agent-accounts/claude/claude-account-switch-settings'
 import type { NativeChatGlobalSettings } from '../native-chat/settings/native-chat-appearance-settings'
 import type { NativeChatIdleStopSettings } from '../native-chat/settings/native-chat-idle-stop'
+import type { SharedCodexServersSettings } from '../native-chat/settings/native-chat-shared-codex-servers'
+import type { NativeChatUsageLimitAutoContinueSettings } from '../native-chat/settings/native-chat-usage-limit-auto-continue'
 import type { EditorTypographySettings } from '../editor/appearance/editor-typography-settings-types'
 import type { PluginAppearanceSettings } from '../plugins/appearance/plugin-appearance-settings-types'
 import type { PluginFileTypeSuggestionSettings } from '../plugins/contributions/plugin-file-type'
@@ -31,6 +34,7 @@ import type { PRAutoRefreshSettings } from '../source-control/hosted-review/revi
 import type { ManagedAccountNameSettings } from '../agent-accounts/managed-account-display-names'
 import type { NewTabMenuSettings } from '../new-tab-menu/new-tab-menu-layout'
 import type { UiLanguageSettings } from '../i18n/ui-language-settings'
+import type { ChatDeleteSettings } from '../agent-session/chat-deletion/orca-chat-delete'
 import type { PortDetectionSettings } from '../workspace/ports/port-detection-settings'
 import type { RemoteHostAutoConnectSettings } from '../remote-runtime/ssh/remote-host-auto-connect-settings'
 import type { ReduceMotionSettings } from '../accessibility/reduce-motion-settings'
@@ -52,6 +56,8 @@ export type GlobalSettingsBase = AntigravityChatAuthSettings &
   ClaudeAgentViewSettings &
   NativeChatGlobalSettings &
   NativeChatIdleStopSettings &
+  SharedCodexServersSettings &
+  NativeChatUsageLimitAutoContinueSettings &
   WorktreeDeletionPreferences &
   WorktreeCardDisplaySettings &
   ClaudeAccountSwitchSettings &
@@ -72,6 +78,7 @@ export type GlobalSettingsBase = AntigravityChatAuthSettings &
   BotsGlobalSettings &
   BrowserPasswordsGlobalSettings &
   BrowserMemorySaverGlobalSettings &
+  PerfNoticeGlobalSettings &
   NestedWorkerDepthSettings &
   AgentWorkspaceTrustSettings &
   KeybindingGlobalSettings &
@@ -81,4 +88,5 @@ export type GlobalSettingsBase = AntigravityChatAuthSettings &
   RemoteHostAutoConnectSettings &
   ManagedAccountNameSettings &
   NewTabMenuSettings &
-  UiLanguageSettings
+  UiLanguageSettings &
+  ChatDeleteSettings

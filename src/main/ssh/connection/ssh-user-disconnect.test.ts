@@ -1,15 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   holdSshTargetForAutoConnectOff,
   isSshUserDisconnected,
   liftSshAutoConnectOffHolds,
-  recordSshUserDisconnected,
-  resetSshUserDisconnectsForTests
+  recordSshUserDisconnected
 } from './ssh-user-disconnect'
 
 describe('turning automatic connects back on', () => {
-  beforeEach(() => resetSshUserDisconnectsForTests())
-
   it('lifts only the holds the setting made, never a Disconnect by the user', () => {
     recordSshUserDisconnected('disconnected-before')
     holdSshTargetForAutoConnectOff('disconnected-before')

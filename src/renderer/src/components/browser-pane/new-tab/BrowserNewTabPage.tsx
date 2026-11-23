@@ -19,6 +19,7 @@ import { useBrowserNewTabLinkedItems } from './use-browser-new-tab-linked-items'
 import { useBrowserNewTabServers, type BrowserNewTabServers } from './use-browser-new-tab-servers'
 import { BrowserNewTabWorkspaceCard } from './browser-new-tab-workspace-card'
 import { BrowserImportHintButton } from '../assemble-chrome/profile-routing/BrowserImportHintButton'
+import type { BrowserClientHostedCookieImportPage } from '../assemble-chrome/profile-routing/use-browser-page-cookie-import'
 import { resolveWorktreeDisplayName } from '@/lib/workspace/display/worktree-default-display-name'
 import { useWorktreeRuntimeTarget } from '@/runtime/rpc/targets/use-worktree-runtime-target'
 import type { RuntimeClientTarget } from '../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
@@ -39,14 +40,17 @@ export function BrowserNewTabPage({
   worktreeId,
   onOpenUrl,
   serversElsewhere = false,
-  importProfileId
+  importProfileId,
+  importClientHostedPage = null
 }: {
   worktreeId: string
   onOpenUrl: (url: string) => void
   /** This tab's page runs on another machine than the workspace's ports, so they open on theirs. */
   serversElsewhere?: boolean
-  /** Local session profile to import logins into; omitted where the session isn't local. */
+  /** Session profile to import logins into; omitted where the page has no import. */
   importProfileId?: string | null
+  /** Set on a server's page this desktop hosts, whose own jar the import fills. */
+  importClientHostedPage?: BrowserClientHostedCookieImportPage | null
 }): React.JSX.Element {
   const worktree = useWorktreeById(worktreeId)
   const repo = useRepoById(worktree?.repoId ?? null) ?? undefined
@@ -56,22 +60,32 @@ export function BrowserNewTabPage({
     runtimeTarget,
     openInPlace: !serversElsewhere
   }
+  const importTarget =
+    importProfileId === undefined
+      ? undefined
+      : { profileId: importProfileId, worktreeId, clientHostedPage: importClientHostedPage }
   return worktree ? (
     <BrowserNewTabWorktreePage
       worktree={worktree}
       repo={repo}
       servers={servers}
       onOpenUrl={onOpenUrl}
-      importProfileId={importProfileId}
+      importTarget={importTarget}
     />
   ) : (
     <BrowserNewTabPageLayout
       linkedItems={NO_LINKED_ITEMS}
       servers={servers}
       onOpenUrl={onOpenUrl}
-      importProfileId={importProfileId}
+      importTarget={importTarget}
     />
   )
+}
+
+type BrowserNewTabImportTarget = {
+  profileId: string | null
+  worktreeId: string
+  clientHostedPage: BrowserClientHostedCookieImportPage | null
 }
 
 function BrowserNewTabWorktreePage({
@@ -79,13 +93,13 @@ function BrowserNewTabWorktreePage({
   repo,
   servers,
   onOpenUrl,
-  importProfileId
+  importTarget
 }: {
   worktree: Worktree
   repo: Repo | undefined
   servers: BrowserNewTabServerContext
   onOpenUrl: (url: string) => void
-  importProfileId?: string | null
+  importTarget?: BrowserNewTabImportTarget
 }): React.JSX.Element {
   const linkedItems = useBrowserNewTabLinkedItems(worktree, repo)
   return (
@@ -94,7 +108,7 @@ function BrowserNewTabWorktreePage({
       linkedItems={linkedItems}
       servers={servers}
       onOpenUrl={onOpenUrl}
-      importProfileId={importProfileId}
+      importTarget={importTarget}
     />
   )
 }
@@ -104,13 +118,13 @@ function BrowserNewTabPageLayout({
   linkedItems,
   servers: { servers, runtimeTarget, openInPlace },
   onOpenUrl,
-  importProfileId
+  importTarget
 }: {
   workspaceName?: string
   linkedItems: WorkspaceLinkedItemRow[]
   servers: BrowserNewTabServerContext
   onOpenUrl: (url: string) => void
-  importProfileId?: string | null
+  importTarget?: BrowserNewTabImportTarget
 }): React.JSX.Element {
   const t = useTranslate()
   const browserUrlHistory = useAppStore((s) => s.browserUrlHistory)
@@ -151,9 +165,13 @@ function BrowserNewTabPageLayout({
 
   // empty:hidden drops the row (and its flex gap) once the hint is hidden.
   const importRow =
-    importProfileId === undefined ? null : (
+    importTarget === undefined ? null : (
       <div className="flex justify-center empty:hidden">
-        <BrowserImportHintButton profileId={importProfileId} />
+        <BrowserImportHintButton
+          profileId={importTarget.profileId}
+          worktreeId={importTarget.worktreeId}
+          clientHostedPage={importTarget.clientHostedPage}
+        />
       </div>
     )
 

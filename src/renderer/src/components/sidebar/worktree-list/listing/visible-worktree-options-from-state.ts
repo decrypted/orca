@@ -3,6 +3,7 @@ import type { Repo } from '../../../../../../shared/repository/repo-types'
 import { getSettingsFocusedExecutionHostId } from '../../../../../../shared/execution-host/execution-host'
 import { getWorktreeIdsWithLiveAgent } from '@/lib/workspace/activity/worktree-activity-state'
 import type { useAppStore } from '@/store/index'
+import type { RuntimeStatuses } from '@/store/slices/runtime-status/views/runtime-status-owner'
 import { getWorktreeIdsWithStructuredChat } from './visible-worktree-activity-inputs'
 import {
   EMPTY_PAIRED_DEVICE_IDS_BY_ENVIRONMENT,
@@ -15,6 +16,7 @@ import { selectProjectGroupFilter } from '../controls/project-group-filter-selec
 /** Isolate store reads so sidebar, palette and keyboard shortcuts can share the pure visibility filter. */
 export function buildVisibleWorktreeOptionsFromState(
   state: ReturnType<typeof useAppStore.getState>,
+  statuses: RuntimeStatuses,
   repoMap: Map<string, Repo>
 ): VisibleWorktreeOptions {
   const defaultHostId = getSettingsFocusedExecutionHostId(state.settings)
@@ -39,10 +41,7 @@ export function buildVisibleWorktreeOptionsFromState(
     hideDetachedHeadWorkspaces: state.hideDetachedHeadWorkspaces,
     hideWorkspacesFromOtherDevices: state.hideWorkspacesFromOtherDevices,
     pairedDeviceIdsByEnvironment: state.hideWorkspacesFromOtherDevices
-      ? getPairedDeviceIdsByEnvironment(
-          state.runtimeEnvironments,
-          state.runtimeStatusByEnvironmentId
-        )
+      ? getPairedDeviceIdsByEnvironment(state.runtimeEnvironments, statuses)
       : EMPTY_PAIRED_DEVICE_IDS_BY_ENVIRONMENT,
     alwaysShowDefaultBranchWorkspace: state.alwaysShowDefaultBranchWorkspace,
     repoMap,
@@ -52,7 +51,7 @@ export function buildVisibleWorktreeOptionsFromState(
     visibleWorkspaceHostIds: state.visibleWorkspaceHostIds,
     defaultHostId,
     worktreeLineageById: state.worktreeLineageById,
-    lineageParentIdentities: selectSidebarLineageParentIdentities(state),
+    lineageParentIdentities: selectSidebarLineageParentIdentities(state, statuses),
     preserveLineageParentOrder: state.sortBy === 'manual'
   }
 }
