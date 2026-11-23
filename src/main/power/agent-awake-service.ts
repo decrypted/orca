@@ -10,7 +10,13 @@ import { MacosSystemSleepAssertion } from './macos-system-sleep-assertion'
 import { AgentAwakeStatusLease, type AgentAwakeStatus } from './agent-awake-status-lease'
 import { ComputerAwakeTimerLease } from './computer-awake-timer-lease'
 import { ComputerAwakePowerGate } from './computer-awake-power-gate'
-import { createPowerSupplyReader, type PowerSupplyReader } from './power-supply-reader'
+import { createPowerSupplyReader } from './power-supply-reader'
+import type {
+  AgentAwakeLogger,
+  AgentAwakeServiceOptions,
+  PlatformAwakeAssertion,
+  PowerSaveBlocker
+} from './agent-awake-service-options'
 import type {
   ComputerAwakePause,
   ComputerAwakePowerPolicy
@@ -18,39 +24,6 @@ import type {
 
 /** A pane working on a WSL host, stamped with this machine's receipt time, never the host's clock. */
 export type WslHostAwakeStatus = { paneKey: string; receivedAt: number }
-
-type PowerSaveBlocker = {
-  start: (type: 'prevent-app-suspension' | 'prevent-display-sleep') => number
-  stop: (id: number) => void
-  isStarted: (id: number) => boolean
-}
-
-type PlatformAwakeAssertion = {
-  start: (reason: string) => boolean | void
-  stop: (reason: string) => void
-  dispose: () => void
-  isAvailable?: () => boolean
-}
-
-type PowerMonitorEventSource = {
-  on: (event: 'resume' | 'on-ac' | 'on-battery', listener: () => void) => void
-  off: (event: 'resume' | 'on-ac' | 'on-battery', listener: () => void) => void
-}
-
-type Logger = Pick<Console, 'debug' | 'warn'>
-
-type AgentAwakeServiceOptions = {
-  blocker?: PowerSaveBlocker
-  linuxAssertion?: PlatformAwakeAssertion
-  logger?: Logger
-  macosAssertion?: PlatformAwakeAssertion
-  now?: () => number
-  /** Persists the mode a timed On returned to, so every window and the next launch agree. */
-  onTimerExpired?: (resumeMode: ComputerAwakeMode) => void
-  platform?: NodeJS.Platform
-  powerMonitor?: PowerMonitorEventSource | null
-  powerSupplyReader?: PowerSupplyReader
-}
 
 export class AgentAwakeService {
   private mode: ComputerAwakeMode = 'off'
@@ -60,7 +33,7 @@ export class AgentAwakeService {
   private lastPublishedStatus: ComputerAwakeStatus | null = null
   private readonly blocker: PowerSaveBlocker
   private readonly linuxAssertion: PlatformAwakeAssertion
-  private readonly logger: Logger
+  private readonly logger: AgentAwakeLogger
   private readonly macosAssertion: PlatformAwakeAssertion
   private readonly platform: NodeJS.Platform
   private readonly now: () => number
@@ -126,12 +99,7 @@ export class AgentAwakeService {
   setMode(mode: ComputerAwakeMode, timer: ComputerAwakeTimer | null = null): void {
     const normalized = normalizeComputerAwakeMode(mode)
     const nextTimer = normalized === 'on' ? timer : null
-    const currentTimer = this.timerLease.get()
-    if (
-      this.mode === normalized &&
-      currentTimer?.until === nextTimer?.until &&
-      currentTimer?.resumeMode === nextTimer?.resumeMode
-    ) {
+    if (this.mode === normalized && this.timerLease.holds(nextTimer)) {
       return
     }
     this.mode = normalized
@@ -140,15 +108,10 @@ export class AgentAwakeService {
   }
 
   setPowerPolicy(policy: ComputerAwakePowerPolicy): void {
-    const current = this.powerGate.getPolicy()
-    if (
-      policy.onlyWhilePluggedIn === current.onlyWhilePluggedIn &&
-      policy.batteryFloorPercent === current.batteryFloorPercent &&
-      policy.lidCloseSleeps === current.lidCloseSleeps
-    ) {
+    if (this.powerGate.hasPolicy(policy)) {
       return
     }
-    if (policy.lidCloseSleeps !== current.lidCloseSleeps) {
+    if (policy.lidCloseSleeps !== this.powerGate.getPolicy().lidCloseSleeps) {
       // A held inhibitor keeps the lock it was spawned with; the next start takes the new one.
       this.runAssertion('stop Linux lid sleep assertion', () => this.linuxAssertion.stop('lid'))
     }
