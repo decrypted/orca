@@ -74,6 +74,14 @@ export class ComputerAwakePowerGate {
     return this.policy
   }
 
+  hasPolicy(policy: ComputerAwakePowerPolicy): boolean {
+    return (
+      policy.onlyWhilePluggedIn === this.policy.onlyWhilePluggedIn &&
+      policy.batteryFloorPercent === this.policy.batteryFloorPercent &&
+      policy.lidCloseSleeps === this.policy.lidCloseSleeps
+    )
+  }
+
   setPolicy(policy: ComputerAwakePowerPolicy): void {
     const levelNeedChanged = policy.onlyWhilePluggedIn !== this.policy.onlyWhilePluggedIn
     this.policy = policy

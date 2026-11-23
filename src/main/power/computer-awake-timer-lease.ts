@@ -18,6 +18,10 @@ export class ComputerAwakeTimerLease {
     return this.timer
   }
 
+  holds(timer: ComputerAwakeTimer | null): boolean {
+    return this.timer?.until === timer?.until && this.timer?.resumeMode === timer?.resumeMode
+  }
+
   set(timer: ComputerAwakeTimer | null): void {
     this.timer = timer
     this.reschedule()
