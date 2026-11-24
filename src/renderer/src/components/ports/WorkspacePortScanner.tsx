@@ -139,7 +139,10 @@ export function WorkspacePortScanner({
         targets.map(async (target) => {
           const key = workspacePortScanKeyForTarget(target)
           try {
-            const result = await scanWorkspacePortsForTarget(target)
+            // The always-on scan is a poll: it must neither hold an idle WSL host up nor wake it.
+            const result = await scanWorkspacePortsForTarget(target, undefined, {
+              background: true
+            })
             return { key, result }
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error)

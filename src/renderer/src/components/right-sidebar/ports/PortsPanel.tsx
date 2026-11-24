@@ -10,6 +10,7 @@ import { PortDetectionOffPanel } from './port-detection-off-panel'
 import { isPortDetectionEnabled } from '../../../../../shared/workspace/ports/port-detection-settings'
 import {
   getPortsPanelOwnerKey,
+  portsPanelForwardEnvironmentId,
   portsPanelForwardTargetId,
   portsPanelHostForOwnerKey
 } from './ports-panel-host'
@@ -37,7 +38,10 @@ export default function PortsPanel({ isVisible }: { isVisible: boolean }): React
   if (!portDetectionEnabled && host.kind !== 'direct-ssh') {
     return (
       <PortDetectionOffPanel
-        forwardTargetId={workspaceId && host.kind === 'endpoint' ? sshForwardTargetId : null}
+        sshForwardTargetId={workspaceId ? sshForwardTargetId : null}
+        forwardEnvironmentId={
+          workspaceId ? portsPanelForwardEnvironmentId(host, sshForwardTargetId) : null
+        }
       />
     )
   }
@@ -56,6 +60,7 @@ export default function PortsPanel({ isVisible }: { isVisible: boolean }): React
           isVisible={isVisible}
           runtimeTarget={host.target}
           sshForwardTargetId={sshForwardTargetId}
+          forwardEnvironmentId={portsPanelForwardEnvironmentId(host, sshForwardTargetId)}
         />
       )
     case 'host-scoped':

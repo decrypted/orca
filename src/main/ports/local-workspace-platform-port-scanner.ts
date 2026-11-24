@@ -6,7 +6,6 @@ import { readWindowsProcessTable } from '../windows/windows-process-table'
 import { runPortScanCommand } from './port-scan-command-client'
 import { parseDarwinNetstatListeners } from './darwin-netstat-listeners'
 import { loadDarwinProcessMetadata } from './darwin-process-metadata'
-import { resolveLinuxListenerSocketOwners } from './linux-listener-socket-owners'
 import {
   partitionListenersNeedingMetadata,
   recallListenerMetadata,
@@ -19,6 +18,7 @@ import {
 } from './local-workspace-port-scan-state'
 import { dedupeRawPorts, parseAddressWithPort } from './local-workspace-port-address'
 import { parseProcNetTcp, type ProcNetListener } from './linux-proc-net-listeners'
+import { resolveLinuxSocketOwners } from './linux-socket-owners'
 
 export function parseLsofListeningOutput(output: string): RawListeningPort[] {
   const ports: RawListeningPort[] = []
@@ -88,7 +88,7 @@ async function dispatchPlatformListeningPortScan(
   options: WorkspacePortScanOptions
 ): Promise<PlatformListeningPortScan> {
   if (process.platform === 'linux') {
-    return scanLinuxProcPorts()
+    return scanLinuxProcPorts(options)
   }
   if (process.platform === 'darwin') {
     return scanDarwinLsofPorts(options)
@@ -165,20 +165,20 @@ async function scanWindowsNetstatPorts(
   }
 }
 
-async function scanLinuxProcPorts(): Promise<PlatformListeningPortScan> {
+async function scanLinuxProcPorts(
+  options: WorkspacePortScanOptions
+): Promise<PlatformListeningPortScan> {
   const ownUid = process.getuid?.()
   const [tcp4, tcp6] = await Promise.all([
     readProcNet('/proc/net/tcp', ownUid),
     readProcNet('/proc/net/tcp6', ownUid)
   ])
   const sockets = [...tcp4, ...tcp6]
-  // Other users' fds (system services included) are unreadable, so their sockets can never resolve and would keep every walk from stopping early.
-  const inodeToPid = await resolveLinuxListenerSocketOwners(
-    new Set(
-      sockets
-        .filter((socket) => ownUid === undefined || ownUid === 0 || socket.uid === ownUid)
-        .map((socket) => socket.inode)
-    )
+  const inodeToPid = await resolveLinuxSocketOwners(
+    new Set(sockets.map((socket) => socket.inode)),
+    {
+      requireExact: options.requireMetadata
+    }
   )
   const metadata = new Map<number, ProcessMetadata>()
   const rawPorts: RawListeningPort[] = []
