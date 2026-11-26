@@ -526,8 +526,8 @@ body:has([data-contextual-tour-overlay])
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .pane-title-overlay-layer .pane-title-actions {
+.pane-title-overlay-layer .pane-title-actions {
+  @variant motion-reduce {
     transition: none;
   }
 }
