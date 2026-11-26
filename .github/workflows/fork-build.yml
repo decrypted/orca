@@ -258,6 +258,10 @@ jobs:
       - name: Stamp the version (not committed)
         run: npm version "$VERSION" --no-git-tag-version --allow-same-version
 
+      # build:release runs the phone web bundle gate; fork branches add shared code the phone bundles.
+      - name: Allow the fork's phone web bundle growth (not committed)
+        run: node .github/fork-build/allow-fork-mobile-eager-bytes.mjs
+
       - name: Resolve electron-builder download versions
         id: eb-versions
         run: node -p "const d = require('./package.json').devDependencies; 'versions=electron' + d.electron + '-builder' + d['electron-builder']" >> "$GITHUB_OUTPUT"
