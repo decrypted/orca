@@ -255,6 +255,8 @@ jobs:
           node config/scripts/orcad-distribution/prebuilds/merge-orcad-prebuilds.mjs "$RUNNER_TEMP"/orcad-prebuild-lanes/*
           pnpm build:orcad-prebuilds --require-slots
           pnpm build:orcad-prebuilds --require-slots linux-x64-glibc217
+      - name: Allow the fork's phone web bundle growth (not committed)
+        run: node .github/fork-build/allow-fork-mobile-eager-bytes.mjs
       - uses: ./.github/actions/build-mobile-web-bundle
       - run: pnpm build:orcad-template
       - name: Report the template size
