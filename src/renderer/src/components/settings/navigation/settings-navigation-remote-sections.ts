@@ -31,7 +31,7 @@ import {
 import type { SettingsNavigationBuildOptions } from './settings-navigation-build-options'
 
 export function buildRemoteSettingsSections(
-  { isMac, isWebClient, isDev }: SettingsNavigationBuildOptions,
+  { isMac, isWebClient, isDev, optInOnlyExperiments }: SettingsNavigationBuildOptions,
   runtimeEnvironmentsSearchEntry: SettingsNavSection['searchEntries'][number],
   t: Translate = translate
 ): SettingsNavSection[] {
@@ -134,7 +134,7 @@ export function buildRemoteSettingsSections(
         'New features that are still taking shape. Give them a try.'
       ),
       icon: FlaskConical,
-      searchEntries: getExperimentalPaneSearchEntries(),
+      searchEntries: getExperimentalPaneSearchEntries(optInOnlyExperiments),
       group: 'experimental'
     },
     ...(showDesktopOnlySettings
