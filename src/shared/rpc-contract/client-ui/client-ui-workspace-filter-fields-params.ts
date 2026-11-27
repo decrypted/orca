@@ -8,5 +8,6 @@ export const ClientUiWorkspaceFilterFields = {
   hideDetachedHeadWorkspaces: lazyZodSchema(() => z.boolean().optional()),
   hideWorkspacesFromOtherDevices: lazyZodSchema(() => z.boolean().optional()),
   alwaysShowDefaultBranchWorkspace: lazyZodSchema(() => z.boolean().optional()),
-  filterRepoIds: lazyZodSchema(() => z.array(z.string()).optional())
+  filterRepoIds: lazyZodSchema(() => z.array(z.string()).optional()),
+  hiddenProjectGroupIds: lazyZodSchema(() => z.array(z.string()).optional())
 }
