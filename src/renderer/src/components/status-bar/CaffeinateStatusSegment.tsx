@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
 import { Coffee } from 'lucide-react'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -14,24 +15,49 @@ import { useAppStore } from '@/store/index'
 import { isPairedWebClientWindow } from '@/app-shell/chrome/desktop-window-chrome'
 import { translate } from '@/i18n/i18n'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
+import { formatMinutesDuration } from '@/i18n/ui-intl-formatters'
 import {
+  AGENT_AWAKE_SETTING_ID,
+  formatAgentAwakeBatteryPercent,
   getAgentAwakeLidNote,
   getAgentAwakeModeLabel,
+  getAgentAwakeTimerLabel,
   getAgentAwakeTitle
 } from '../settings/agents/behavior/agent-awake-copy'
 import {
+  COMPUTER_AWAKE_TIMER_HOURS,
   computerAwakeSettingsForMode,
+  computerAwakeSettingsForTimer,
   normalizeComputerAwakeMode,
-  type ComputerAwakeStatus
+  readComputerAwakeSelection,
+  startComputerAwakeTimer
 } from '../../../../shared/app-lifecycle/computer-awake-mode'
+import {
+  readComputerAwakePowerPolicy,
+  type ComputerAwakePause
+} from '../../../../shared/app-lifecycle/computer-awake-power-policy'
 import { STATUS_BAR_CONTEXT_MENU_EXEMPT_PROPS } from './composition/status-bar-context-menu-policy'
+import { getComputerAwakePowerControls, useComputerAwakeStatus } from './use-computer-awake-status'
 
-const INACTIVE_STATUS: ComputerAwakeStatus = {
-  mode: 'off',
-  active: false
-}
-
-function activityLabel(active: boolean, t: Translate = translate): string {
+function activityLabel(
+  active: boolean,
+  paused: ComputerAwakePause | undefined,
+  batteryFloorPercent: number,
+  t: Translate = translate
+): string {
+  if (paused === 'battery') {
+    return t(
+      'auto.components.status.bar.CaffeinateStatusSegment.pausedOnBattery',
+      'Paused on battery'
+    )
+  }
+  if (paused === 'low-battery') {
+    return t(
+      'auto.components.status.bar.CaffeinateStatusSegment.pausedLowBattery',
+      'Paused below {{percent}}',
+      { percent: formatAgentAwakeBatteryPercent(batteryFloorPercent) }
+    )
+  }
   return active
     ? t('auto.components.status.bar.CaffeinateStatusSegment.active', 'Active')
     : t('auto.components.status.bar.CaffeinateStatusSegment.inactive', 'Inactive')
@@ -41,42 +67,26 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
   const t = useTranslate()
   const settings = useAppStore((state) => state.settings)
   const updateSettings = useAppStore((state) => state.updateSettings)
-  const configuredMode = normalizeComputerAwakeMode(
-    settings?.computerAwakeMode,
-    settings?.keepComputerAwakeWhileAgentsRun
-  )
-  const [serviceStatus, setServiceStatus] = useState<ComputerAwakeStatus>(INACTIVE_STATUS)
-
-  useEffect(() => {
-    let mounted = true
-    const unsubscribe = window.api.agentAwake.onChanged((status) => {
-      if (mounted) {
-        setServiceStatus(status)
-      }
-    })
-    void window.api.agentAwake
-      .getStatus()
-      .then((status) => {
-        if (mounted) {
-          setServiceStatus(status)
-        }
-      })
-      .catch(() => {})
-    return () => {
-      mounted = false
-      unsubscribe()
-    }
-  }, [])
+  const selection = readComputerAwakeSelection(settings)
+  const configuredMode = selection.mode
+  const timer = selection.timer
+  const powerPolicy = readComputerAwakePowerPolicy(settings)
+  const openSettingsTarget = useAppStore((state) => state.openSettingsTarget)
+  const openSettingsPage = useAppStore((state) => state.openSettingsPage)
+  const serviceStatus = useComputerAwakeStatus()
+  const powerControls = getComputerAwakePowerControls(serviceStatus)
 
   if (isPairedWebClientWindow()) {
     return null
   }
 
   const mode = serviceStatus.mode === configuredMode ? serviceStatus.mode : configuredMode
-  const active =
-    serviceStatus.mode === configuredMode ? serviceStatus.active : configuredMode === 'on'
+  const serviceAgrees = serviceStatus.mode === configuredMode
+  const active = serviceAgrees ? serviceStatus.active : configuredMode === 'on'
+  const paused = serviceAgrees ? serviceStatus.paused : undefined
   const title = getAgentAwakeTitle(t)
-  const statusText = `${getAgentAwakeModeLabel(mode, t)} · ${activityLabel(active, t)}`
+  const modeLabel = timer ? getAgentAwakeTimerLabel(timer, t) : getAgentAwakeModeLabel(mode, t)
+  const statusText = `${modeLabel} · ${activityLabel(active, paused, powerPolicy.batteryFloorPercent, t)}`
   const ariaLabel = t(
     'auto.components.status.bar.CaffeinateStatusSegment.ariaLabel',
     '{{title}}, {{status}}',
@@ -85,6 +95,12 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
 
   const setMode = (nextMode: string): void => {
     void updateSettings(computerAwakeSettingsForMode(normalizeComputerAwakeMode(nextMode)))
+  }
+
+  const startTimer = (hours: number): void => {
+    void updateSettings(
+      computerAwakeSettingsForTimer(startComputerAwakeTimer(selection, hours, Date.now()))
+    )
   }
 
   return (
@@ -99,7 +115,7 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
               aria-label={ariaLabel}
             >
               <Coffee className={`size-3 ${active ? 'text-foreground' : ''}`} />
-              <span className="text-[11px] font-medium">{getAgentAwakeModeLabel(mode, t)}</span>
+              <span className="text-[11px] font-medium">{modeLabel}</span>
               <span
                 aria-hidden
                 className={`size-1.5 rounded-full ${
@@ -110,7 +126,7 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={6}>
-          {ariaLabel}. {getAgentAwakeLidNote(undefined, t)}
+          {ariaLabel}. {getAgentAwakeLidNote(undefined, t, powerPolicy.lidCloseSleeps)}
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent
@@ -125,7 +141,7 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
           <span className="font-normal text-muted-foreground">{statusText}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup value={mode} onValueChange={setMode}>
+        <DropdownMenuRadioGroup value={timer ? '' : mode} onValueChange={setMode}>
           <DropdownMenuRadioItem value="on" className="py-1.5">
             <span className="flex flex-col">
               <span>{getAgentAwakeModeLabel('on', t)}</span>
@@ -160,6 +176,55 @@ export function CaffeinateStatusSegment(): React.JSX.Element | null {
             </span>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>
+          {t('auto.components.status.bar.CaffeinateStatusSegment.timerHeading', 'Keep awake for')}
+        </DropdownMenuLabel>
+        {/* onSelect, not onValueChange, so picking the running duration restarts it. */}
+        <DropdownMenuRadioGroup value={timer ? String(timer.hours) : ''}>
+          {COMPUTER_AWAKE_TIMER_HOURS.map((hours) => (
+            <DropdownMenuRadioItem
+              key={hours}
+              value={String(hours)}
+              onSelect={() => startTimer(hours)}
+            >
+              {formatMinutesDuration(hours * 60)}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        {powerControls.battery || powerControls.lid ? (
+          <>
+            <DropdownMenuSeparator />
+            {powerControls.battery ? (
+              <DropdownMenuCheckboxItem
+                checked={powerPolicy.onlyWhilePluggedIn}
+                onCheckedChange={(checked) =>
+                  void updateSettings({ computerAwakeOnlyWhilePluggedIn: checked === true })
+                }
+              >
+                {t(
+                  'auto.components.settings.AgentAwakeBatterySettings.onlyWhilePluggedIn',
+                  'Only while plugged in'
+                )}
+              </DropdownMenuCheckboxItem>
+            ) : null}
+            <DropdownMenuItem
+              onSelect={() => {
+                openSettingsTarget({
+                  pane: 'agents',
+                  repoId: null,
+                  sectionId: AGENT_AWAKE_SETTING_ID
+                })
+                openSettingsPage()
+              }}
+            >
+              {t(
+                'auto.components.status.bar.CaffeinateStatusSegment.batterySettings',
+                'Battery and lid settings…'
+              )}
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )

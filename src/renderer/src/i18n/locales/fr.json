@@ -5782,7 +5782,11 @@
             "ariaLabel": "{{title}}, {{status}}",
             "onDescription": "Maintenir cet ordinateur éveillé en permanence",
             "autoDescription": "Rester éveillé pendant qu'un agent travaille",
-            "offDescription": "Autoriser le comportement de veille normal du système"
+            "offDescription": "Autoriser le comportement de veille normal du système",
+            "timerHeading": "Empêcher la veille pendant",
+            "pausedOnBattery": "En pause sur batterie",
+            "pausedLowBattery": "En pause sous {{percent}}",
+            "batterySettings": "Réglages batterie et capot…"
           },
           "RuntimeHostStatusRow": {
             "previous_connection_closed": "La connexion précédente a été fermée",
@@ -12436,7 +12440,10 @@
           "modeDescriptionDefault": "Choisissez Activé, Agent ou Désactivé. Le mode Agent reste éveillé tant que des agents travaillent. Orca demande également à cet appareil de rester éveillé lorsque le capot est fermé, sous réserve de sa politique d'alimentation.",
           "lidNoteMac": "Empêche la mise en veille avec le capot ouvert ; fermer le capot met quand même ce Mac en veille.",
           "lidNoteWindows": "Le comportement de fermeture du couvercle suit les paramètres d'alimentation de cet appareil.",
-          "lidNoteDefault": "Orca demande également à cet appareil de rester éveillé lorsque le couvercle est fermé, sous réserve de sa politique d'alimentation."
+          "lidNoteDefault": "Orca demande également à cet appareil de rester éveillé lorsque le couvercle est fermé, sous réserve de sa politique d'alimentation.",
+          "timerUntil": "Jusqu’à {{time}}",
+          "modeDescriptionLidSleeps": "Choisissez Activé, Agent ou Désactivé. Le mode Agent empêche la mise en veille pendant que des agents travaillent. Fermer le capot met quand même cet appareil en veille, sauf si logind est configuré pour respecter les verrous de veille (LidSwitchIgnoreInhibited=no).",
+          "lidNoteLidSleeps": "Fermer le capot met quand même cet appareil en veille, sauf si logind est configuré pour respecter les verrous de veille (LidSwitchIgnoreInhibited=no)."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Hooks de statut des agents",
@@ -13540,7 +13547,8 @@
         "AgentAwakeSetting": {
           "on": "Activé",
           "auto": "Agent",
-          "off": "Désactivé"
+          "off": "Désactivé",
+          "timerActive": "{{until}}, puis {{mode}}"
         },
         "shareSkills": {
           "description": "Partagez vos skills avec un lien non répertorié. Toute personne qui l'a peut les installer.",
@@ -14709,6 +14717,15 @@
           "shownPluginCount_other": "{{count}} plugins correspondants affichés, dont celui-ci",
           "samePublisher": "Autres éléments répertoriés sous {{value0}}",
           "shownPluginCount_many": "{{count}} plugins correspondants affichés, dont celui-ci"
+        },
+        "AgentAwakeBatterySettings": {
+          "onlyWhilePluggedIn": "Uniquement sur secteur",
+          "onlyWhilePluggedInDescription": "Sur batterie, l’ordinateur se met en veille normalement ; le maintien en éveil reprend une fois rebranché.",
+          "floorLabel": "Sur batterie, mettre en pause sous",
+          "floorDescription": "Sous ce niveau de charge, l’ordinateur se met en veille normalement jusqu’à ce qu’il soit rebranché.",
+          "lidLabel": "Fermer le capot met l’ordinateur en veille",
+          "lidDescription": "Désactivé demande à cet appareil de rester éveillé capot fermé, selon sa politique d’alimentation.",
+          "windowsNoFloor": "Windows ne fournit pas le niveau de charge à Orca : sur batterie, l’ordinateur reste éveillé sans limite de charge."
         }
       },
       "right": {
