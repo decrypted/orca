@@ -9,8 +9,7 @@ import {
   createWorktreeContextMenuDeleteIntent,
   deferWorktreeContextMenuDeleteIntent
 } from './worktree-context-menu-delete-intent'
-import { runSleepWorktrees } from '../sleep/sleep-worktree-flow'
-import { collectTwinHostsAlsoSlept } from '../sleep/sleep-twin-confirmation'
+import { sleepWorktreesConfirmingTwins } from '../sleep/sleep-twin-confirmation'
 import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
 import { resolveWorktreeDisplayName } from '@/lib/workspace/display/worktree-default-display-name'
 import { formatClipboardFilePath } from '@/lib/clipboard/clipboard-file-path'
@@ -201,14 +200,7 @@ export function useWorktreeContextMenuCommands(args: {
   const sleepWorktreesAfterMenuClose = useCallback(
     (worktrees: readonly Worktree[]) => {
       args.setMenuOpenState(false)
-      const worktreeIds = worktrees.map((worktree) => worktree.id)
-      // Why confirm: a twin's copies share one id, so this also sleeps copies the user didn't pick.
-      const hostIds = collectTwinHostsAlsoSlept(args.getState(), worktrees)
-      if (hostIds.length > 0) {
-        args.openModal('confirm-sleep-twin', { worktreeIds, hostIds })
-        return
-      }
-      window.setTimeout(() => void runSleepWorktrees(worktreeIds), 50)
+      sleepWorktreesConfirmingTwins(worktrees, args)
     },
     [args]
   )
