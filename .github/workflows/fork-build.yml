@@ -384,6 +384,9 @@ jobs:
       - name: Load packaged node-pty on the Linux floor
         if: runner.os == 'Linux'
         run: node config/scripts/desktop-distribution/runtime-verification/run-linux-packaged-node-pty-floor-smoke.mjs --app-dir dist/linux-unpacked
+        env:
+          # Why: like release-cut, the public Ubuntu archive stalls apt-get update on x64 runners.
+          ORCA_NODE_PTY_FLOOR_APT_MIRROR: http://azure.archive.ubuntu.com/ubuntu
 
       - name: Check the deb
         if: runner.os == 'Linux'
