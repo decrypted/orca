@@ -2411,8 +2411,8 @@ html.native-shell .app-layout {
   animation: remote-server-outage-nudge 250ms ease-in-out 2;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .remote-server-outage-nudge {
+.remote-server-outage-nudge {
+  @variant motion-reduce {
     animation: none;
     outline: 2px solid var(--status-warning);
     outline-offset: 2px;
