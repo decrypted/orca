@@ -1,4 +1,5 @@
 import { holdLaunchReconnectOptOuts } from '../ssh/ssh-host-user-disconnect'
+import { isRemoteHostAutoConnectEnabled } from '../../../shared/remote-runtime/ssh/remote-host-auto-connect-settings'
 import { createAiVaultAssociationObserver } from '../ai-vault/ai-vault-projection-dependency'
 import { invalidateAiVaultHostLegCache } from '../ai-vault/ai-vault-host-leg-cache'
 import { registerRuntimeEnvironmentSubscriptionHandlers } from './subscriptions/runtime-environment-subscription-handlers'
@@ -229,18 +230,19 @@ export async function registerRuntimeEnvironmentHandlers(
       recordRemoteLayoutFrame(store, environmentId, method, response)
   })
   await hostInitialization
-  await holdLaunchReconnectOptOuts(store.getSshTargets?.() ?? [])
+  await holdLaunchReconnectOptOuts(store.getSshTargets?.() ?? [], {
+    autoConnect: isRemoteHostAutoConnectEnabled(store.getSettings())
+  })
   await retireStateOfRemovedEnvironments(store)
   await Promise.all(
     (await listEnvironments(getUserDataPath())).map(async (environment) => {
-      if (
-        !isRuntimeEnvironmentManuallyDisconnected(environment.id) &&
-        !isGatedOffWslHost(environment)
-      ) {
-        const owner = await getRuntimeEnvironmentStatusOwner(getUserDataPath(), environment.id)
-        if (!isRuntimeEnvironmentManuallyDisconnected(environment.id)) {
-          owner.activate()
-        }
+      if (isGatedOffWslHost(environment)) {
+        return
+      }
+      // A held server gets a retired owner too, so renderers see it disconnected and stop polling it.
+      const owner = await getRuntimeEnvironmentStatusOwner(getUserDataPath(), environment.id)
+      if (!isRuntimeEnvironmentManuallyDisconnected(environment.id)) {
+        owner.activate()
       }
     })
   )

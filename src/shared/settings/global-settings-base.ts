@@ -35,6 +35,7 @@ import type { NewTabMenuSettings } from '../new-tab-menu/new-tab-menu-layout'
 import type { UiLanguageSettings } from '../i18n/ui-language-settings'
 import type { ChatDeleteSettings } from '../agent-session/chat-deletion/orca-chat-delete'
 import type { PortDetectionSettings } from '../workspace/ports/port-detection-settings'
+import type { RemoteHostAutoConnectSettings } from '../remote-runtime/ssh/remote-host-auto-connect-settings'
 
 type DesktopWindowSettings = {
   /** Windows-only: close (X) hides to tray instead of quitting; the tray icon is always present regardless. */
@@ -80,6 +81,7 @@ export type GlobalSettingsBase = AntigravityChatAuthSettings &
   WorkspaceCleanupPolicySettings &
   PRAutoRefreshSettings &
   PortDetectionSettings &
+  RemoteHostAutoConnectSettings &
   ManagedAccountNameSettings &
   NewTabMenuSettings &
   UiLanguageSettings &
