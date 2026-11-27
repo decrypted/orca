@@ -51,6 +51,14 @@ export function formatWorkspaceCreateError(error: unknown): WorkspaceCreateError
   }
 }
 
-export function getWorkspaceCreateErrorToastMessage(error: WorkspaceCreateErrorDisplay): string {
-  return error.help ? error.title : error.message
+/** Toast and creation-panel payload; keeps the help with the title because it names the user's next step. */
+export type WorkspaceCreateErrorNotice = {
+  title: string
+  description?: string
+}
+
+export function getWorkspaceCreateErrorNotice(
+  error: WorkspaceCreateErrorDisplay
+): WorkspaceCreateErrorNotice {
+  return error.help ? { title: error.title, description: error.help } : { title: error.message }
 }

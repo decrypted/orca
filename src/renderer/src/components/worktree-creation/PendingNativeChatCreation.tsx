@@ -188,6 +188,7 @@ export default function PendingNativeChatCreation({
         steps={deriveWorktreeSetupSteps(entry, now)}
         agentLabel={agentLabel}
         error={isError ? failureText(entry, t) : null}
+        errorHelp={isError ? entry.errorHelp : undefined}
         onRetry={() => retryBackgroundWorktreeCreation(creationId)}
         onDismiss={dismiss}
       />
