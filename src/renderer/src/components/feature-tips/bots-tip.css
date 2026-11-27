@@ -70,6 +70,19 @@
     transition: opacity 200ms ease;
   }
 }
+/* The Reduce motion setting; this file is imported outside main.css, which owns motion-reduce. */
+:where(:root[data-reduce-motion]) {
+  [data-feature-tip='bots'] .bt-pg-el,
+  [data-feature-tip='bots'] .bt-copy-stack > .bt-layer:not(.bt-cur) .bt-pg-el,
+  [data-feature-tip='bots'] .bt-copy-stack > .bt-layer.bt-pre .bt-pg-el {
+    transform: none;
+    transition: opacity 200ms ease;
+  }
+  [data-feature-tip='bots'] .bt-visual-stack > .bt-layer,
+  [data-feature-tip='bots'] .bt-visual-stack > .bt-layer:not(.bt-cur) {
+    transition: opacity 200ms ease;
+  }
+}
 
 /* ===== Copy ===== */
 [data-feature-tip='bots'] .bt-eyebrow {
@@ -353,6 +366,20 @@
   background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), transparent);
 }
 @media (prefers-reduced-motion: reduce) {
+  [data-feature-tip='bots'] .bt-lid {
+    animation: none;
+  }
+  [data-feature-tip='bots'] .bt-mk,
+  [data-feature-tip='bots'] .bt-paw-press {
+    transition: none;
+  }
+  /* The still frame sits 12px lower: less of each body shows and the paws rest on the edge. */
+  [data-feature-tip='bots'] [data-mascots][data-on] .bt-mk {
+    transform: translateY(12px) rotate(var(--bt-rot, 0deg));
+  }
+}
+/* The Reduce motion setting; this file is imported outside main.css, which owns motion-reduce. */
+:where(:root[data-reduce-motion]) {
   [data-feature-tip='bots'] .bt-lid {
     animation: none;
   }

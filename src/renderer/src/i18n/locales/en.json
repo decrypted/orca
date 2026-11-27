@@ -974,6 +974,20 @@
         },
         "08c854149e": "Reduce visual effects"
       },
+      "reduceMotion": {
+        "title": "Reduce motion",
+        "description": "Stop animations and transitions in Orca's interface, such as the spinner on working agents. Browser pages, plugin views and notebook outputs keep following your OS setting.",
+        "system": "Follow system",
+        "always": "Always",
+        "keywords": {
+          "motion": "motion",
+          "animation": "animation",
+          "spinner": "spinner",
+          "accessibility": "accessibility",
+          "performance": "performance",
+          "cpu": "cpu"
+        }
+      },
       "appIcon": {
         "importCustom": "Custom…",
         "replaceCustom": "Replace custom icon…",

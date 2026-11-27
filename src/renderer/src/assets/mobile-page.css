@@ -1882,11 +1882,17 @@
   stroke-width: 2.4;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mobile-page-root .mp-screen-slide,
-  .mobile-page-root .mp-flow-viewport,
-  .mobile-page-root .mp-flow-screen {
+.mobile-page-root .mp-screen-slide,
+.mobile-page-root .mp-flow-viewport,
+.mobile-page-root .mp-flow-screen {
+  @variant motion-reduce {
     transition: none;
+  }
+}
+
+.mobile-page-root :is(.mp-network-refresh.is-spinning svg, .mp-wl-spinner, .mp-term-cursor) {
+  @variant motion-reduce {
+    animation: none;
   }
 }
 

@@ -77,3 +77,11 @@
     animation: none;
   }
 }
+/* The Reduce motion setting; this file is imported outside main.css, which owns motion-reduce. */
+:where(:root[data-reduce-motion]) {
+  [data-sidebar-content-viewport]::view-transition-group(*),
+  [data-sidebar-content-viewport]::view-transition-old(*),
+  [data-sidebar-content-viewport]::view-transition-new(*) {
+    animation: none;
+  }
+}

@@ -35,6 +35,24 @@
 @custom-variant can-hover (@media (hover: hover));
 /* Set by use-reduce-visual-effects for the setting or OS reduced transparency. */
 @custom-variant reduce-effects (&:where(:root[data-reduce-effects] *));
+/* Reduce motion "Always" sets data-reduce-motion; a prefix, since a suffix would follow ::before.
+   Put pseudo-elements inside @variant (`.x { @variant motion-reduce { &::before {} } }`): nesting
+   cannot match `&` to a pseudo-element parent. Tailwind drops not-motion-reduce: for this variant. */
+@custom-variant motion-reduce {
+  @media (prefers-reduced-motion: reduce) {
+    @slot;
+  }
+  :where(:root[data-reduce-motion]) & {
+    @slot;
+  }
+}
+@custom-variant motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
+    :where(:root:not([data-reduce-motion])) & {
+      @slot;
+    }
+  }
+}
 
 .theme-transition-disabled *,
 .theme-transition-disabled *::before,
@@ -2393,8 +2411,8 @@ html.native-shell .app-layout {
   animation: remote-server-outage-nudge 250ms ease-in-out 2;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .remote-server-outage-nudge {
+.remote-server-outage-nudge {
+  @variant motion-reduce {
     animation: none;
     outline: 2px solid var(--status-warning);
     outline-offset: 2px;
@@ -2460,12 +2478,12 @@ html.native-shell .app-layout {
 }
 
 /* Generic spinners and pulses hold still under reduced motion even where a caller forgot motion-reduce:. */
-@media (prefers-reduced-motion: reduce) {
-  .agent-working-spinner,
-  .loading-spinner,
-  .animate-spin,
-  .animate-pulse,
-  .worker-dock-dot-grid > * {
+.agent-working-spinner,
+.loading-spinner,
+.animate-spin,
+.animate-pulse,
+.worker-dock-dot-grid > * {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -2516,6 +2534,13 @@ html.native-shell .app-layout {
 @media (forced-colors: active) {
   .plugin-panel-icon {
     color: CanvasText;
+  }
+}
+
+/* Stills loops that lack motion-reduce:; unlayered, so it beats the animate-* utilities. */
+:is(.animate-spin, .animate-pulse, .animate-ping, .animate-bounce, .animate-waveform) {
+  @variant motion-reduce {
+    animation: none;
   }
 }
 
@@ -2619,16 +2644,20 @@ html.native-shell .app-layout {
   border-left-color: color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .compact-agent-expansion-grid {
+.compact-agent-expansion-grid {
+  @variant motion-reduce {
     transition-duration: 0ms;
   }
+}
 
-  .compact-agent-expansion-grid-expanded .compact-agent-expansion-content {
+.compact-agent-expansion-grid-expanded .compact-agent-expansion-content {
+  @variant motion-reduce {
     animation-duration: 0ms;
   }
+}
 
-  .compact-agent-summary-panel {
+.compact-agent-summary-panel {
+  @variant motion-reduce {
     transition-duration: 0ms;
   }
 }
@@ -2682,11 +2711,13 @@ html.native-shell .app-layout {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .scroll-to-current-workspace-reveal-highlight::before {
-    animation: none;
-    opacity: 1;
-    transform: none;
+.scroll-to-current-workspace-reveal-highlight {
+  @variant motion-reduce {
+    &::before {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
   }
 }
 
@@ -2706,8 +2737,8 @@ html.native-shell .app-layout {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .native-chat-composer-glow {
+.native-chat-composer-glow {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -2754,8 +2785,8 @@ html.native-shell .app-layout {
   border-radius: var(--radius-md);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .settings-target-highlight {
+.settings-target-highlight {
+  @variant motion-safe {
     animation: settings-target-highlight-fade 3s ease-out forwards;
   }
 }
@@ -2884,9 +2915,9 @@ html.native-shell .app-layout {
   animation: collapsible-up 180ms ease-out;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .collapsible-height-content[data-state='open'],
-  .collapsible-height-content[data-state='closed'] {
+.collapsible-height-content[data-state='open'],
+.collapsible-height-content[data-state='closed'] {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -2970,8 +3001,8 @@ html.native-shell .app-layout {
   animation: workspace-board-trigger-preview-pulse 1.4s ease-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  [data-workspace-board-trigger][data-workspace-board-preview='true'] {
+[data-workspace-board-trigger][data-workspace-board-preview='true'] {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -3534,9 +3565,11 @@ html.native-shell .app-layout {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tab-entry-omnibox::after {
-    animation: none !important;
+.tab-entry-omnibox {
+  @variant motion-reduce {
+    &::after {
+      animation: none !important;
+    }
   }
 }
 
@@ -3695,20 +3728,26 @@ html.native-shell .app-layout {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .onboarding-launch-demo * {
+.onboarding-launch-demo * {
+  @variant motion-reduce {
     animation: none !important;
   }
+}
 
-  .onboarding-launch-demo [data-demo='menu'] {
+.onboarding-launch-demo [data-demo='menu'] {
+  @variant motion-reduce {
     opacity: 1;
   }
+}
 
-  .onboarding-launch-demo [data-demo='picked-row'] {
+.onboarding-launch-demo [data-demo='picked-row'] {
+  @variant motion-reduce {
     background: var(--accent);
   }
+}
 
-  .onboarding-launch-demo [data-demo='cursor'] {
+.onboarding-launch-demo [data-demo='cursor'] {
+  @variant motion-reduce {
     transform: translate(130px, 112px);
   }
 }
@@ -3743,14 +3782,16 @@ html.native-shell .app-layout {
   animation: cli-tip-command-line 160ms ease-out both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-cli-tip-caret {
+.animate-cli-tip-caret {
+  @variant motion-reduce {
     animation: none;
     opacity: 1;
     transform: none;
   }
+}
 
-  .animate-cli-tip-command-line {
+.animate-cli-tip-command-line {
+  @variant motion-reduce {
     animation: none;
   }
 }
@@ -3821,13 +3862,15 @@ html.native-shell .app-layout {
   animation: cmd-j-tip-result-in 120ms ease-out both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-cmd-j-tip-caret {
+.animate-cmd-j-tip-caret {
+  @variant motion-reduce {
     animation: none;
     opacity: 1;
   }
+}
 
-  .animate-cmd-j-tip-result-in {
+.animate-cmd-j-tip-result-in {
+  @variant motion-reduce {
     animation: none;
     opacity: 1;
     transform: none;
@@ -4074,11 +4117,13 @@ body:has([data-contextual-tour-target='tab-create-menu'][data-state='open'])
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .orca-contextual-tour-target-rings::before {
-    animation: none;
-    opacity: 0.72;
-    transform: scale(1.28);
+.orca-contextual-tour-target-rings {
+  @variant motion-reduce {
+    &::before {
+      animation: none;
+      opacity: 0.72;
+      transform: scale(1.28);
+    }
   }
 }
 
@@ -4498,16 +4543,17 @@ body:has([data-contextual-tour-target='tab-create-menu'][data-state='open'])
   text-overflow: ellipsis;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  :is(:is(a, button):is(:hover, :focus-visible) .hover-scroll-text, .hover-scroll-text:hover)
-    > span {
+:is(:is(a, button):is(:hover, :focus-visible) .hover-scroll-text, .hover-scroll-text:hover) > span {
+  @variant motion-safe {
     transform: translateX(100%);
     transition: transform var(--hover-scroll-duration) linear;
   }
+}
 
-  :is(:is(a, button):is(:hover, :focus-visible) .hover-scroll-text, .hover-scroll-text:hover)
-    > span
-    > span {
+:is(:is(a, button):is(:hover, :focus-visible) .hover-scroll-text, .hover-scroll-text:hover)
+  > span
+  > span {
+  @variant motion-safe {
     width: max-content;
     min-width: 100%;
     overflow: visible;
@@ -4586,14 +4632,25 @@ body:has([data-contextual-tour-target='tab-create-menu'][data-state='open'])
   animation-play-state: paused;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .browser-agent-cursor-glyph,
-  .browser-agent-cursor-layer::before {
+.browser-agent-cursor-glyph {
+  @variant motion-reduce {
     transition: none;
   }
+}
 
-  .browser-agent-cursor-layer[data-agent-active]::before {
-    animation: none;
+.browser-agent-cursor-layer {
+  @variant motion-reduce {
+    &::before {
+      transition: none;
+    }
+  }
+}
+
+.browser-agent-cursor-layer[data-agent-active] {
+  @variant motion-reduce {
+    &::before {
+      animation: none;
+    }
   }
 }
 
