@@ -488,6 +488,7 @@
     },
     "newTab": {
       "emptyHint": "Search or enter an address above. Sites you visit, dev servers running in this workspace, and its PR and issue will show up here.",
+      "emptyHintPortDetectionOff": "Search or enter an address above. Sites you visit and this workspace's PR and issue will show up here. Port detection is off, so dev servers won't.",
       "openServerFailed": "Couldn’t open {{address}}",
       "removedFromHistory": "Removed “{{title}}” from history",
       "removeSuggestion": "Remove from history",
@@ -2251,6 +2252,23 @@
         "add": "Add a server for this repo",
         "files": "From this repo’s files",
         "open": "Open {{file}}"
+      }
+    },
+    "backgroundActivity": {
+      "title": "Background activity",
+      "description": "Checks Orca runs on its own while you work.",
+      "portDetection": {
+        "title": "Detect ports",
+        "description": "Show which ports your workspaces listen on, locally and on remote hosts. When off, Orca stops checking which ports listen on this computer, also for connected clients, and hides the Ports status bar item.",
+        "keywords": {
+          "ports": "ports",
+          "scan": "scan",
+          "localhost": "localhost",
+          "server": "server",
+          "polling": "polling",
+          "background": "background",
+          "remote": "remote"
+        }
       }
     }
   },
@@ -13225,7 +13243,8 @@
         },
         "BrowserLocalhostWorktreeLabelsSetting": {
           "1db3c8b983": "Open workspace ports as worktree-specific Orca localhost URLs so browser tabs are easier to tell apart.",
-          "1af20fbf51": "Localhost worktree labels"
+          "1af20fbf51": "Localhost worktree labels",
+          "needsPortDetection": "Needs port detection, which is off in Advanced."
         },
         "AgentRuntimeSetting": {
           "label": "Agent runtime",
@@ -15443,7 +15462,9 @@
             "remotePortOutOfRange": "Remote port must be 1–65535",
             "localPortOutOfRange": "Local port must be 1–65535",
             "localPortInUse": "Port {{port}} is already in use. Choose a different local port.",
-            "localPortRequiresPrivileges": "Port {{port}} requires elevated privileges. Use a local port ≥ 1024."
+            "localPortRequiresPrivileges": "Port {{port}} requires elevated privileges. Use a local port ≥ 1024.",
+            "detectionOff": "Port detection is off",
+            "turnOnDetection": "Turn on port detection"
           },
           "Search": {
             "1abfb25a66": "Type to search in files",

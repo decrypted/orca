@@ -135,7 +135,8 @@ async function scanPortsOnWorkspaceHost(
 ): Promise<RuntimeRpcSuccess<WorkspacePortHostScanResult>> {
   try {
     return await client.call<WorkspacePortHostScanResult>('workspacePorts.scanHost', {
-      worktree: selector
+      worktree: selector,
+      ignorePortDetectionSetting: true
     })
   } catch (error) {
     if (error instanceof RuntimeClientError && error.code === 'method_not_found') {

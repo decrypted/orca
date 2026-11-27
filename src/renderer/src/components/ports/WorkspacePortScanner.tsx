@@ -21,6 +21,7 @@ import {
 } from '@/lib/workspace-ports/workspace-port-scan-debounce'
 import type { WorkspacePortScanResult } from '../../../../shared/workspace/ports/workspace-ports'
 import { buildExecutionHostRegistry } from '../../../../shared/execution-host/execution-host-registry'
+import { isPortDetectionEnabled } from '../../../../shared/workspace/ports/port-detection-settings'
 
 const WORKSPACE_PORT_SCAN_INTERVAL_MS = 30_000
 const WORKSPACE_PORT_ADVERTISED_URL_SETTLE_MS = 1_000
@@ -42,8 +43,14 @@ function makeUnavailableScan(reason: string): WorkspacePortScanResult {
   }
 }
 
-export function WorkspacePortScanner({ enabled = true }: { enabled?: boolean }): null {
+export function WorkspacePortScanner({
+  enabled: sessionReady = true
+}: {
+  enabled?: boolean
+}): null {
   const settings = useAppStore((s) => s.settings)
+  const detectionEnabled = settings !== null && isPortDetectionEnabled(settings)
+  const enabled = sessionReady && detectionEnabled
   const repos = useAppStore((s) => s.repos)
   const hasWorktrees = useAppStore((state) =>
     getCachedHasAnyWorktrees(selectWorktreesByRepo(state))
@@ -188,6 +195,16 @@ export function WorkspacePortScanner({ enabled = true }: { enabled?: boolean }):
     },
     [hasWorktrees, setWorkspacePortScan, replaceWorkspacePortScans]
   )
+
+  useEffect(() => {
+    if (detectionEnabled) {
+      return
+    }
+    // Turning detection off must not leave the last scan's ports on screen.
+    portScanDebounceRef.current.clear()
+    lastRefreshStartedAtByKeyRef.current.clear()
+    setWorkspacePortScan(null)
+  }, [detectionEnabled, setWorkspacePortScan])
 
   useEffect(() => {
     if (!enabled) {

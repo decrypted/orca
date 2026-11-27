@@ -7,6 +7,7 @@ import {
   PET_SIZE_MIN,
   type CustomPet
 } from '../../../../../shared/pets/pet-types'
+import { isPortDetectionEnabled } from '../../../../../shared/workspace/ports/port-detection-settings'
 import { clampPetSize } from './ui-slice-hydration-sanitizers'
 import { readPersistedFloatingTerminalPanelViewState } from '../../../components/floating-terminal/state/floating-terminal-panel-view-state'
 
@@ -49,6 +50,10 @@ export function createUiSurfaceActions(set: UISliceSet, _get: UISliceGet): Parti
     // Why: drop stale per-host scans in one store update so a large host set can't fan out notifications to every subscriber.
     replaceWorkspacePortScans: (scansByKey, projection) =>
       set((state) => {
+        // Why: one-off scans started before detection was turned off must not re-show their ports.
+        if (!isPortDetectionEnabled(state.settings)) {
+          return state
+        }
         if (
           state.workspacePortScansByKey === scansByKey &&
           state.workspacePortScan?.key === projection?.key &&

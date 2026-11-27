@@ -6,6 +6,7 @@ import { Button } from '../../ui/button'
 import { Label } from '../../ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip'
 import { AdvancedNetworkSettingsSection } from './network/AdvancedNetworkSettingsSection'
+import { BackgroundActivitySettingsSection } from './background-activity/BackgroundActivitySettingsSection'
 import { SearchableSetting } from '../section-layout/SearchableSetting'
 import { Switch } from '@/components/ui/switch'
 import { getAdvancedSearchEntry } from './advanced-search'
@@ -46,6 +47,8 @@ export function AdvancedPane({ settings, updateSettings }: AdvancedPaneProps): R
 
   return (
     <div className="space-y-8">
+      <BackgroundActivitySettingsSection settings={settings} updateSettings={updateSettings} />
+
       <SettingsGroup
         title={t('auto.components.settings.AdvancedPane.8d8d8ac599', 'Compatibility')}
         description={t(

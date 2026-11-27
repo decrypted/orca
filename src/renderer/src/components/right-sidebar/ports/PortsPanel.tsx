@@ -6,6 +6,8 @@ import { useTranslate } from '@/i18n/use-translate'
 import { LocalWorkspacePortsPanel } from './local-workspace-ports-panel'
 import { SshPortsPanel } from './ssh-ports-panel'
 import { HostScopedPortsPanel } from './host-scoped-ports-panel'
+import { PortDetectionOffPanel } from './port-detection-off-panel'
+import { isPortDetectionEnabled } from '../../../../../shared/workspace/ports/port-detection-settings'
 import {
   getPortsPanelOwnerKey,
   portsPanelForwardEnvironmentId,
@@ -30,6 +32,19 @@ export default function PortsPanel({ isVisible }: { isVisible: boolean }): React
     [host, workspaceId]
   )
 
+  const portDetectionEnabled = useAppStore((state) => isPortDetectionEnabled(state.settings))
+
+  // Direct SSH has no port detection; its panel only manages forwards.
+  if (!portDetectionEnabled && host.kind !== 'direct-ssh') {
+    return (
+      <PortDetectionOffPanel
+        sshForwardTargetId={workspaceId ? sshForwardTargetId : null}
+        forwardEnvironmentId={
+          workspaceId ? portsPanelForwardEnvironmentId(host, sshForwardTargetId) : null
+        }
+      />
+    )
+  }
   if (!workspaceId) {
     return <LocalWorkspacePortsPanel isVisible={isVisible} runtimeTarget={null} />
   }
